@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -23,7 +23,7 @@ jobs:
           npx cap sync android
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -41,7 +41,7 @@ jobs:
           apksigner sign --ks android/app/build/outputs/apk/release/sovereign-key.jks --ks-pass env:KEYSTORE_PASSWORD --out Sovereign-Video-Editor-Signed.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Upload Signed APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Sovereign-Video-Editor-Signed-APK
           path: Sovereign-Video-Editor-Signed.apk
