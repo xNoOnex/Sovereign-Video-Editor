@@ -37,6 +37,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
+          sudo apt-get update && sudo apt-get install -y apksigner
           echo $KEYSTORE_BASE64 | base64 --decode > android/app/build/outputs/apk/release/sovereign-key.jks
           apksigner sign --ks android/app/build/outputs/apk/release/sovereign-key.jks --ks-pass env:KEYSTORE_PASSWORD --out Sovereign-Video-Editor-Signed.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
 
