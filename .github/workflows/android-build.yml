@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build and Sign Production APK
 
 on:
   push:
@@ -28,12 +28,20 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Build Debug APK
+      - name: Build Release APK
         working-directory: ./android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
-      - name: Upload APK Artifact
+      - name: Sign APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo $KEYSTORE_BASE64 | base64 --decode > android/app/build/outputs/apk/release/sovereign-key.jks
+          apksigner sign --ks android/app/build/outputs/apk/release/sovereign-key.jks --ks-pass env:KEYSTORE_PASSWORD --out Sovereign-Video-Editor-Signed.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v3
         with:
-          name: Sovereign-Video-Editor-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Sovereign-Video-Editor-Signed-APK
+          path: Sovereign-Video-Editor-Signed.apk
