@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export default function Editor() {
-  // Use generic file inputs to bypass Android Gallery restrictions
   const mainMediaRef = useRef(null);
   const pipMediaRef = useRef(null);
   const audioMediaRef = useRef(null);
@@ -17,11 +16,14 @@ export default function Editor() {
   });
 
   const [currentTime, setCurrentTime] = useState(0);
+  const timeRef = useRef(0); // High-speed clock for touch tracking
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // Unified live-tracking state for any selected overlay
+  // High-speed drag references to bypass React state lag
   const [livePos, setLivePos] = useState({ x: 50, y: 50 });
   const isDraggingOverlay = useRef(false);
+  const activeDragClip = useRef(null); // Tracks exactly which layer you grabbed
+  const pinchRef = useRef({ active: false, startDist: 0, startZoom: 1 });
   const interaction = useRef({ type: null, targetId: null, trackId: null, edge: null, startX: 0, initialStart: 0, initialDuration: 0 });
 
   const getSelectedData = () => {
@@ -41,15 +43,16 @@ export default function Editor() {
     if (isPlaying) {
       interval = setInterval(() => {
         setCurrentTime(prev => {
-          if (prev >= project.duration) { setIsPlaying(false); return 0; }
-          return prev + 0.05; 
+          const nextTime = prev >= project.duration ? 0 : prev + 0.05;
+          timeRef.current = nextTime;
+          if (nextTime === 0) setIsPlaying(false);
+          return nextTime;
         });
       }, 50);
     }
     return () => clearInterval(interval);
   }, [isPlaying, project.duration]);
 
-  // Aggressive Playback Sync: Forces all active media to play/pause together instantly
   useEffect(() => {
     const mediaElements = document.querySelectorAll('.compositor-media');
     mediaElements.forEach(media => {
@@ -61,6 +64,17 @@ export default function Editor() {
   const togglePlayback = () => setIsPlaying(!isPlaying);
 
   const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
+
+  const updateSelectedClip = (key, value) => {
+    if (!selectedData) return;
+    setProject(prev => {
+      const newTracks = prev.tracks.map(t => {
+        if (t.id !== selectedData.trackId) return t;
+        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
+      });
+      return { ...prev, tracks: newTracks };
+    });
+  };
 
   // --- DYNAMIC MEDIA ROUTER ---
   const handleAddMedia = (e, targetType, defaultColor) => {
@@ -74,7 +88,8 @@ export default function Editor() {
     const newClip = { 
       id: newClipId, name: file.name, type: isAudio ? 'audio' : (isImage ? 'image' : 'video'),
       timelineStartTime: currentTime, duration: isImage || isAudio ? 5 : 15, color: defaultColor, url: fileUrl, 
-      zoom: 1.0, speed: 1.0, muted: false, keyframes: [], zoomKeyframes: [] // Init arrays for live tracking
+      zoom: 1.0, speed: 1.0, muted: false, keyframes: [], zoomKeyframes: [],
+      baseX: 50, baseY: 50 // Base coordinates for static positioning
     };
 
     setProject(prev => {
@@ -83,7 +98,6 @@ export default function Editor() {
         const trackIndex = newTracks.findIndex(t => t.type === targetType);
         newTracks[trackIndex].clips.push(newClip);
       } else if (targetType === 'overlay') {
-        // INFINITE OVERLAYS: Spawn a new layer for every image/video
         const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
         const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Overlay ${overlayCount}`, muted: false, clips: [newClip] };
         const audioIndex = newTracks.findIndex(t => t.type === 'audio');
@@ -94,20 +108,16 @@ export default function Editor() {
     e.target.value = ''; 
   };
 
-  // --- LIVE KEYFRAMING (ZOOM & POSITION) ---
+  // --- LIVE MULTI-TOUCH ENGINE (Zoom & Drag) ---
   const handleZoomChange = (newZoom) => {
     if (!selectedData) return;
     setProject(prev => {
       const newTracks = prev.tracks.map(t => {
         if (t.id !== selectedData.trackId) return t;
-        return {
-          ...t, clips: t.clips.map(c => {
+        return { ...t, clips: t.clips.map(c => {
             if (c.id !== selectedData.clip.id) return c;
             const updatedClip = { ...c, zoom: newZoom };
-            // If the video is playing, record the exact zoom level at this exact timestamp
-            if (isPlaying) {
-              updatedClip.zoomKeyframes = [...(c.zoomKeyframes || []), { time: currentTime, zoom: newZoom }];
-            }
+            if (isPlaying) updatedClip.zoomKeyframes = [...(c.zoomKeyframes || []), { time: timeRef.current, zoom: newZoom }];
             return updatedClip;
           })
         };
@@ -116,36 +126,69 @@ export default function Editor() {
     });
   };
 
-  const handleOverlayTouchStart = (e) => {
-    if (!selectedData || selectedData.track.type !== 'overlay') return;
-    e.preventDefault(); 
-    isDraggingOverlay.current = true; 
-    if (!isPlaying) togglePlayback(); 
+  const getPinchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
+  const handleViewportTouchStart = (e) => {
+    // 2-Finger Pinch Zoom on Main Video
+    if (selectedData && e.touches.length === 2 && selectedData.trackId === 't-main') {
+      e.preventDefault();
+      pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: selectedData.clip.zoom || 1 };
+    }
+  };
+
+  const handleOverlayTouchStart = (e, clipId, trackId) => {
+    e.stopPropagation(); // Stop the viewport from intercepting
+    activeDragClip.current = { clipId, trackId };
+    isDraggingOverlay.current = true;
+    setProject(prev => ({ ...prev, selectedClipId: clipId })); // Auto-select the overlay you grabbed
   };
 
   const handleViewportTouchMove = (e) => {
-    if (!containerRef.current || !isDraggingOverlay.current || !selectedData) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    let newX = Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left) / rect.width) * 100));
-    let newY = Math.max(0, Math.min(100, ((e.touches[0].clientY - rect.top) / rect.height) * 100));
-    setLivePos({ x: newX, y: newY });
+    if (!containerRef.current) return;
 
-    setProject(prev => {
-      const newTracks = [...prev.tracks];
-      const tIndex = newTracks.findIndex(t => t.id === selectedData.trackId);
-      const cIndex = newTracks[tIndex].clips.findIndex(c => c.id === selectedData.clip.id);
-      
-      if (!newTracks[tIndex].clips[cIndex].keyframes) newTracks[tIndex].clips[cIndex].keyframes = [];
-      newTracks[tIndex].clips[cIndex].keyframes.push({ time: currentTime, x: newX, y: newY });
-      
-      return { ...prev, tracks: newTracks };
-    });
+    // Handle Pinch Zoom
+    if (pinchRef.current.active && e.touches.length === 2 && selectedData?.trackId === 't-main') {
+      const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
+      let newZoom = Math.max(0.5, Math.min(5.0, pinchRef.current.startZoom * scaleMultiplier));
+      handleZoomChange(newZoom);
+    }
+    
+    // Handle Overlay Dragging
+    else if (isDraggingOverlay.current && activeDragClip.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      let newX = Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left) / rect.width) * 100));
+      let newY = Math.max(0, Math.min(100, ((e.touches[0].clientY - rect.top) / rect.height) * 100));
+      setLivePos({ x: newX, y: newY }); // Update UI instantly
+
+      setProject(prev => {
+        const newTracks = [...prev.tracks];
+        const tIndex = newTracks.findIndex(t => t.id === activeDragClip.current.trackId);
+        if (tIndex === -1) return prev;
+        const cIndex = newTracks[tIndex].clips.findIndex(c => c.id === activeDragClip.current.clipId);
+        if (cIndex === -1) return prev;
+
+        const clip = { ...newTracks[tIndex].clips[cIndex] };
+        
+        if (isPlaying) {
+          // If video is playing, record keyframes
+          if (!clip.keyframes) clip.keyframes = [];
+          clip.keyframes.push({ time: timeRef.current, x: newX, y: newY });
+        } else {
+          // If paused, just permanently move the base location
+          clip.baseX = newX;
+          clip.baseY = newY;
+        }
+
+        newTracks[tIndex].clips[cIndex] = clip;
+        return { ...prev, tracks: newTracks };
+      });
+    }
   };
 
   const handleViewportTouchEnd = () => { 
+    pinchRef.current.active = false;
     isDraggingOverlay.current = false; 
-    if (isPlaying) togglePlayback(); 
+    activeDragClip.current = null;
   };
 
   // --- TIMELINE INTERACTION ENGINE ---
@@ -161,7 +204,9 @@ export default function Editor() {
     const deltaSeconds = (e.touches[0].clientX - startX) / project.zoomLevel;
 
     if (type === 'scrub') {
-      setCurrentTime(Math.max(0, initialStart + deltaSeconds));
+      const newTime = Math.max(0, initialStart + deltaSeconds);
+      setCurrentTime(newTime);
+      timeRef.current = newTime;
       return;
     }
 
@@ -169,8 +214,7 @@ export default function Editor() {
       const newTracks = prev.tracks.map(track => {
         if (track.id !== trackId) return track;
         return {
-          ...track,
-          clips: track.clips.map(c => {
+          ...track, clips: track.clips.map(c => {
             if (c.id !== clipId) return c;
             let newStart = c.timelineStartTime;
             let newDuration = c.duration;
@@ -198,13 +242,12 @@ export default function Editor() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#000', color: '#ECECEC', fontFamily: 'sans-serif' }}>
       
-      {/* Accept */* forces Android to show all file types */}
       <input type="file" accept="*/*" ref={mainMediaRef} onChange={(e) => handleAddMedia(e, 'main_video', '#4CAF50')} style={{ display: 'none' }} />
       <input type="file" accept="*/*" ref={pipMediaRef} onChange={(e) => handleAddMedia(e, 'overlay', '#FF9800')} style={{ display: 'none' }} />
       <input type="file" accept="audio/*" ref={audioMediaRef} onChange={(e) => handleAddMedia(e, 'audio', '#00BCD4')} style={{ display: 'none' }} />
 
       {/* 1. VIEWPORT */}
-      <div ref={containerRef} onTouchMove={handleViewportTouchMove} onTouchEnd={handleViewportTouchEnd} style={{ flex: '0 0 35%', backgroundColor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', borderBottom: '1px solid #222' }}>
+      <div ref={containerRef} onTouchStart={handleViewportTouchStart} onTouchMove={handleViewportTouchMove} onTouchEnd={handleViewportTouchEnd} style={{ flex: '0 0 35%', backgroundColor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', borderBottom: '1px solid #222' }}>
         
         {/* Layer 0: Main Reel */}
         {activeMainClips.map(clip => {
@@ -214,11 +257,11 @@ export default function Editor() {
             if (pastKf.length > 0) renderZoom = pastKf[pastKf.length - 1].zoom;
           }
           return (
-            <div key={clip.id} style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1, transform: `scale(${renderZoom})`, transition: isPlaying ? 'none' : 'transform 0.1s linear', opacity: project.tracks.find(t=>t.type==='main_video').muted ? 0.5 : 1 }}>
+            <div key={clip.id} style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1, transform: `scale(${renderZoom})`, opacity: project.tracks.find(t=>t.type==='main_video').muted ? 0.5 : 1 }}>
               {clip.type === 'image' ? (
-                <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="main" />
+                <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} alt="main" />
               ) : (
-                <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} playsInline muted={clip.muted || project.tracks.find(t=>t.type==='main_video').muted} />
+                <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} playsInline muted={clip.muted || project.tracks.find(t=>t.type==='main_video').muted} />
               )}
             </div>
           );
@@ -228,29 +271,34 @@ export default function Editor() {
         {overlayTracks.map((track, trackIndex) => {
           const activeClips = track.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
           return activeClips.map(clip => {
-            let posX = 50, posY = 50; // Center default
-            if (clip.keyframes?.length > 0 && (!isDraggingOverlay.current || project.selectedClipId !== clip.id)) {
+            let posX = clip.baseX ?? 50; 
+            let posY = clip.baseY ?? 50; 
+            
+            // Read keyframes if they exist, unless we are currently dragging this exact clip
+            if (clip.keyframes?.length > 0 && (!isDraggingOverlay.current || activeDragClip.current?.clipId !== clip.id)) {
               const pastKf = clip.keyframes.filter(kf => kf.time <= currentTime);
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; }
-            } else if (isDraggingOverlay.current && project.selectedClipId === clip.id) {
+            } else if (isDraggingOverlay.current && activeDragClip.current?.clipId === clip.id) {
               posX = livePos.x; posY = livePos.y;
             }
 
             return (
-              <div key={clip.id} onTouchStart={(e) => { if (project.selectedClipId === clip.id) handleOverlayTouchStart(e); }}
+              <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id)}
                 style={{ 
                   position: 'absolute', top: `${posY}%`, left: `${posX}%`, transform: 'translate(-50%, -50%)', 
                   width: '35%', height: '35%', zIndex: 10 + trackIndex, 
                   border: project.selectedClipId === clip.id ? '2px solid #2196F3' : 'none', borderRadius: '8px', overflow: 'hidden' 
                 }}>
-                {clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="pip" /> 
-                : <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted={clip.muted || track.muted} />}
+                {clip.type === 'image' ? (
+                  <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> 
+                ) : (
+                  <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} />
+                )}
               </div>
             );
           });
         })}
 
-        {/* Layer 2: Audio */}
         {activeAudioClips.map(clip => <audio key={clip.id} className="compositor-media" autoPlay={isPlaying} src={clip.url} muted={clip.muted || project.tracks.find(t=>t.type==='audio').muted} />)}
       </div>
 
