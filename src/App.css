@@ -1,1 +1,18 @@
 
+
+/* Mobile Overlap & Sticky Header Hotfix */
+@media (max-width: 768px) {
+  main .sticky,
+  section .sticky,
+  div[class*="sticky"] {
+    position: relative !important;
+    top: auto !important;
+    transform: none !important;
+  }
+
+  /* Prevent tight section height collapsing */
+  section {
+    height: auto !important;
+    min-height: min-content !important;
+  }
+}
