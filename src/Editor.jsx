@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 
@@ -6,14 +6,14 @@ export default function Editor() {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const containerRef = useRef(null);
-
-  // Initialize the offline FFmpeg engine
   const ffmpegRef = useRef(new FFmpeg());
+
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportAsGif, setExportAsGif] = useState(false); // GIF Toggle State
 
   const [project, setProject] = useState({
-    duration: 30, zoomLevel: 10, selectedClipId: null, activePreviewUrl: null,
+    duration: 30, zoomLevel: 10, selectedClipId: null, selectedTrackId: null, activePreviewUrl: null,
     tracks: [
       { id: 't-main', type: 'main_video', name: 'Primary Reel', clips: [] },
       { id: 't-pip', type: 'overlay', name: 'PIP / Overlays', clips: [] }
@@ -23,42 +23,37 @@ export default function Editor() {
   const [censorRenderPos, setCensorRenderPos] = useState({ x: 50, y: 50 });
   const isDragging = useRef(false);
 
-  // --- NATIVE EXPORT ENGINE ---
-  const handleExport = async () => {
-    if (!project.activePreviewUrl) return alert("Please add a video first!");
-    
-    setIsExporting(true);
-    const ffmpeg = ffmpegRef.current;
-
-    // Load the engine into the phone's memory if it isn't already
-    if (!ffmpeg.loaded) {
-      await ffmpeg.load();
+  // Helper to find the currently selected clip's data
+  const getSelectedClip = () => {
+    if (!project.selectedClipId) return null;
+    for (const track of project.tracks) {
+      const clip = track.clips.find(c => c.id === project.selectedClipId);
+      if (clip) return { clip, trackId: track.id };
     }
+    return null;
+  };
 
-    // Hook into the progress to update the UI
-    ffmpeg.on('progress', ({ progress }) => {
-      setExportProgress(Math.round(progress * 100));
+  const selectedData = getSelectedClip();
+
+  // Apply real-time playback speed when the selected clip changes or its speed changes
+  useEffect(() => {
+    if (videoRef.current && selectedData?.clip) {
+      videoRef.current.playbackRate = selectedData.clip.speed || 1.0;
+    }
+  }, [selectedData?.clip?.speed]);
+
+  const updateSelectedClip = (key, value) => {
+    if (!selectedData) return;
+    setProject(prev => {
+      const newTracks = prev.tracks.map(track => {
+        if (track.id !== selectedData.trackId) return track;
+        return {
+          ...track,
+          clips: track.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c)
+        };
+      });
+      return { ...prev, tracks: newTracks };
     });
-
-    // 1. Load the selected video from the phone into the offline engine
-    await ffmpeg.writeFile('input.mp4', await fetchFile(project.activePreviewUrl));
-
-    // 2. Run a basic FFmpeg command (For now, let's just copy it to prove the pipeline works)
-    // We will inject the complex motion-tracking math here later
-    await ffmpeg.exec(['-i', 'input.mp4', '-c', 'copy', 'output.mp4']);
-
-    // 3. Pull the finished file out of the engine
-    const data = await ffmpeg.readFile('output.mp4');
-    
-    // 4. Trigger an immediate native download to the phone's gallery/downloads
-    const exportUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-    const a = document.createElement('a');
-    a.href = exportUrl;
-    a.download = 'Sovereign_Export.mp4';
-    a.click();
-
-    setIsExporting(false);
-    setExportProgress(0);
   };
 
   const handleFileSelect = (e) => {
@@ -69,8 +64,9 @@ export default function Editor() {
 
     setProject(prev => {
       const newTracks = [...prev.tracks];
-      newTracks[0].clips.push({ id: newClipId, name: file.name, timelineStartTime: 0, duration: 15, color: '#4CAF50', url: fileUrl });
-      return { ...prev, tracks: newTracks, activePreviewUrl: fileUrl };
+      // Inject zoom and speed into the new clip's state
+      newTracks[0].clips.push({ id: newClipId, name: file.name, timelineStartTime: 0, duration: 15, color: '#4CAF50', url: fileUrl, zoom: 1.0, speed: 1.0 });
+      return { ...prev, tracks: newTracks, activePreviewUrl: fileUrl, selectedClipId: newClipId };
     });
   };
 
@@ -115,13 +111,17 @@ export default function Editor() {
     }
   };
 
+  const handleExport = async () => { /* Export logic placeholder */ };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: 'sans-serif' }}>
       
       {/* 1. Video Preview Canvas */}
-      <div ref={containerRef} style={{ flex: '0 0 40%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ flex: '0 0 45%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
         {project.activePreviewUrl ? (
-          <video ref={videoRef} src={project.activePreviewUrl} onTimeUpdate={handleTimeUpdate} style={{ width: '100%', height: '100%', objectFit: 'contain' }} playsInline />
+          <div style={{ width: '100%', height: '100%', transform: `scale(${selectedData?.trackId === 't-main' ? selectedData.clip.zoom : 1.0})`, transition: 'transform 0.1s ease-out' }}>
+            <video ref={videoRef} src={project.activePreviewUrl} onTimeUpdate={handleTimeUpdate} style={{ width: '100%', height: '100%', objectFit: 'contain' }} playsInline />
+          </div>
         ) : (
           <p style={{ color: '#555' }}>[ No Media Selected ]</p>
         )}
@@ -136,21 +136,41 @@ export default function Editor() {
              DRAG ME
            </div>
         )}
+
+        {/* Dynamic Contextual Toolbar for Zoom & Speed */}
+        {selectedData?.trackId === 't-main' && (
+          <div style={{ position: 'absolute', bottom: '10px', width: '90%', backgroundColor: 'rgba(30, 30, 30, 0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #444', zIndex: 30 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#aaa', marginBottom: '5px' }}>
+              <span>Zoom ({selectedData.clip.zoom.toFixed(1)}x)</span>
+            </div>
+            <input type="range" min="1" max="3" step="0.1" value={selectedData.clip.zoom} onChange={(e) => updateSelectedClip('zoom', parseFloat(e.target.value))} style={{ width: '100%', marginBottom: '10px' }} />
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#aaa', marginBottom: '5px' }}>
+              <span>Speed ({selectedData.clip.speed.toFixed(2)}x)</span>
+            </div>
+            <input type="range" min="0.25" max="2" step="0.25" value={selectedData.clip.speed} onChange={(e) => updateSelectedClip('speed', parseFloat(e.target.value))} style={{ width: '100%' }} />
+          </div>
+        )}
       </div>
 
       {/* 2. Transport Controls & Export */}
-      <div style={{ height: '50px', backgroundColor: '#141414', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <div style={{ height: '60px', backgroundColor: '#141414', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button onClick={() => videoRef.current?.play()} style={{ background: '#fff', color: '#000', border: 'none', borderRadius: '50%', width: '30px', height: '30px' }}>▶</button>
-          <button onClick={addCensorBlock} style={{ backgroundColor: '#E91E63', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>+ Add Censor</button>
+          <button onClick={addCensorBlock} style={{ backgroundColor: '#E91E63', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>+ Censor</button>
           <input type="file" accept="video/*" ref={fileInputRef} onChange={handleFileSelect} style={{ display: 'none' }} />
-          <button onClick={() => fileInputRef.current.click()} style={{ backgroundColor: '#2196F3', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>+ Media</button>
+          <button onClick={() => fileInputRef.current.click()} style={{ backgroundColor: '#2196F3', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>+ Media</button>
         </div>
 
-        {/* The FFmpeg Export Button */}
-        <button onClick={handleExport} disabled={isExporting} style={{ backgroundColor: isExporting ? '#555' : '#4CAF50', color: '#fff', border: 'none', padding: '6px 15px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-          {isExporting ? `Exporting... ${exportProgress}%` : '💾 Export'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <label style={{ fontSize: '10px', color: '#aaa', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input type="checkbox" checked={exportAsGif} onChange={(e) => setExportAsGif(e.target.checked)} />
+            GIF
+          </label>
+          <button onClick={handleExport} disabled={isExporting} style={{ backgroundColor: isExporting ? '#555' : '#4CAF50', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+            {isExporting ? `Exporting... ${exportProgress}%` : '💾 Export'}
+          </button>
+        </div>
       </div>
 
       {/* 3. Explicit Multi-Track Layering UI */}
@@ -170,7 +190,7 @@ export default function Editor() {
                       fontSize: '10px', color: '#fff', boxShadow: project.selectedClipId === clip.id ? '0 0 0 2px #fff' : 'none'
                     }}
                   >
-                    {clip.name} {clip.keyframes && `(${clip.keyframes.length} pts)`}
+                    {clip.name}
                   </div>
                 ))}
               </div>
