@@ -5,11 +5,10 @@ export default function Editor() {
   const pipMediaRef = useRef(null);
   const audioMediaRef = useRef(null);
   
-  const videoRef = useRef(null);
   const containerRef = useRef(null);
 
   const [project, setProject] = useState({
-    duration: 30, zoomLevel: 10, selectedClipId: null, activePreviewUrl: null,
+    duration: 30, zoomLevel: 10, selectedClipId: null,
     tracks: [
       { id: 't-main', type: 'main_video', name: 'Primary', muted: false, clips: [] },
       { id: 't-pip', type: 'overlay', name: 'Overlays', muted: false, clips: [] },
@@ -18,10 +17,9 @@ export default function Editor() {
   });
 
   const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [censorRenderPos, setCensorRenderPos] = useState({ x: 50, y: 50 });
   
-  // UNIFIED INTERACTION ENGINE
-  // Tracks exactly what your thumb is doing on the timeline
   const interaction = useRef({ type: null, targetId: null, trackId: null, edge: null, startX: 0, initialStart: 0, initialDuration: 0 });
   const isDraggingCensor = useRef(false);
 
@@ -36,19 +34,41 @@ export default function Editor() {
 
   const selectedData = getSelectedData();
 
+  // --- PLAYBACK ENGINE ---
+  // A master clock that drives the playhead across the timeline
   useEffect(() => {
-    if (videoRef.current && selectedData?.clip) {
-      videoRef.current.playbackRate = selectedData.clip.speed || 1.0;
-      videoRef.current.muted = selectedData.track.muted || selectedData.clip.muted;
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => {
+          if (prev >= project.duration) {
+            setIsPlaying(false);
+            return 0;
+          }
+          return prev + 0.05; // Drives UI forward
+        });
+      }, 50);
     }
-  }, [selectedData?.clip?.speed, selectedData?.clip?.muted, selectedData?.track?.muted]);
+    return () => clearInterval(interval);
+  }, [isPlaying, project.duration]);
+
+  const togglePlayback = () => {
+    const videos = document.querySelectorAll('.compositor-media');
+    if (isPlaying) {
+      videos.forEach(v => v.pause && v.pause());
+      setIsPlaying(false);
+    } else {
+      videos.forEach(v => v.play && v.play());
+      setIsPlaying(true);
+    }
+  };
 
   const updateSelectedClip = (key, value) => {
     if (!selectedData) return;
     setProject(prev => {
-      const newTracks = prev.tracks.map(track => {
-        if (track.id !== selectedData.trackId) return track;
-        return { ...track, clips: track.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
+      const newTracks = prev.tracks.map(t => {
+        if (t.id !== selectedData.trackId) return t;
+        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
       });
       return { ...prev, tracks: newTracks };
     });
@@ -61,16 +81,16 @@ export default function Editor() {
     if (!file) return;
     const fileUrl = URL.createObjectURL(file);
     const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
     const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
 
     setProject(prev => {
       const newTracks = [...prev.tracks];
       newTracks[targetTrackIndex].clips.push({ 
-        id: newClipId, name: file.name, type: isImage ? 'image' : 'video',
-        timelineStartTime: currentTime, // Drops media exactly where the playhead is!
-        duration: isImage ? 5 : 15, color: defaultColor, url: fileUrl, zoom: 1.0, speed: 1.0, muted: false
+        id: newClipId, name: file.name, type: isAudio ? 'audio' : (isImage ? 'image' : 'video'),
+        timelineStartTime: currentTime, duration: isImage || isAudio ? 5 : 15, color: defaultColor, url: fileUrl, zoom: 1.0, speed: 1.0, muted: false
       });
-      return { ...prev, tracks: newTracks, activePreviewUrl: fileUrl, selectedClipId: newClipId };
+      return { ...prev, tracks: newTracks, selectedClipId: newClipId };
     });
     e.target.value = ''; 
   };
@@ -85,10 +105,17 @@ export default function Editor() {
   };
 
   // --- CENSOR MOTION SKETCHING ---
-  const handleCensorTouchStart = (e) => { e.preventDefault(); isDraggingCensor.current = true; videoRef.current?.play(); };
-  const handleCensorTouchEnd = () => { isDraggingCensor.current = false; videoRef.current?.pause(); };
+  const handleCensorTouchStart = (e) => { 
+    e.preventDefault(); 
+    isDraggingCensor.current = true; 
+    if (!isPlaying) togglePlayback(); 
+  };
+  const handleCensorTouchEnd = () => { 
+    isDraggingCensor.current = false; 
+    if (isPlaying) togglePlayback(); 
+  };
   const handleCensorTouchMove = (e) => {
-    if (!containerRef.current || !videoRef.current || !isDraggingCensor.current) return;
+    if (!containerRef.current || !isDraggingCensor.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const touch = e.touches[0];
     let newX = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
@@ -99,37 +126,17 @@ export default function Editor() {
       setProject(prev => {
         const newTracks = [...prev.tracks];
         const clipIndex = newTracks[1].clips.findIndex(c => c.id === prev.selectedClipId);
-        if (clipIndex !== -1) newTracks[1].clips[clipIndex].keyframes.push({ time: videoRef.current.currentTime, x: newX, y: newY });
+        if (clipIndex !== -1) newTracks[1].clips[clipIndex].keyframes.push({ time: currentTime, x: newX, y: newY });
         return { ...prev, tracks: newTracks };
       });
     }
   };
 
-  const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime); // Move playhead with video
-
-    if (isDraggingCensor.current) return;
-    const pipClip = project.tracks[1].clips[0];
-    if (pipClip?.keyframes?.length > 0) {
-      const pastKeyframes = pipClip.keyframes.filter(kf => kf.time <= videoRef.current.currentTime);
-      if (pastKeyframes.length > 0) {
-        const latestKf = pastKeyframes[pastKeyframes.length - 1];
-        setCensorRenderPos({ x: latestKf.x, y: latestKf.y });
-      }
-    }
-  };
-
-  // --- UNIFIED TIMELINE INTERACTION ENGINE ---
   const startInteraction = (e, type, payload) => {
     e.stopPropagation();
     const touch = e.touches[0];
     interaction.current = { type, startX: touch.clientX, ...payload };
-    
-    // Select clip immediately if we grab it
-    if (type === 'trim' || type === 'move') {
-      setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
-    }
+    if (type === 'trim' || type === 'move') setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
   };
 
   const handleTimelineTouchMove = (e) => {
@@ -141,9 +148,7 @@ export default function Editor() {
     const deltaSeconds = deltaX / project.zoomLevel;
 
     if (type === 'scrub') {
-      let newTime = Math.max(0, initialStart + deltaSeconds);
-      setCurrentTime(newTime);
-      if (videoRef.current) videoRef.current.currentTime = newTime; // Sync video
+      setCurrentTime(Math.max(0, initialStart + deltaSeconds));
       return;
     }
 
@@ -154,13 +159,11 @@ export default function Editor() {
           ...track,
           clips: track.clips.map(c => {
             if (c.id !== clipId) return c;
-            
             let newStart = c.timelineStartTime;
             let newDuration = c.duration;
 
-            if (type === 'move') {
-              newStart = Math.max(0, initialStart + deltaSeconds);
-            } else if (type === 'trim') {
+            if (type === 'move') newStart = Math.max(0, initialStart + deltaSeconds);
+            else if (type === 'trim') {
               if (edge === 'left') {
                 newStart = Math.max(0, initialStart + deltaSeconds);
                 newDuration = Math.max(0.5, initialDuration - (newStart - initialStart));
@@ -178,6 +181,12 @@ export default function Editor() {
 
   const handleTimelineTouchEnd = () => { interaction.current.type = null; };
 
+  // --- THE COMPOSITOR ENGINE ---
+  // Evaluates which clips should be visible based on the exact playhead position
+  const activeMainClips = project.tracks[0].clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
+  const activePipClips = project.tracks[1].clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
+  const activeAudioClips = project.tracks[2].clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#000', color: '#ECECEC', fontFamily: 'sans-serif' }}>
       
@@ -185,52 +194,86 @@ export default function Editor() {
       <input type="file" accept="video/*,image/*" ref={pipMediaRef} onChange={(e) => handleAddMedia(e, 1, '#FF9800')} style={{ display: 'none' }} />
       <input type="file" accept="audio/*" ref={audioMediaRef} onChange={(e) => handleAddMedia(e, 2, '#00BCD4')} style={{ display: 'none' }} />
 
+      {/* 1. THE COMPOSITING VIEWPORT */}
       <div ref={containerRef} style={{ flex: '0 0 35%', backgroundColor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', borderBottom: '1px solid #222' }}>
-        {project.activePreviewUrl ? (
-          <div style={{ width: '100%', height: '100%', transform: `scale(${selectedData?.trackId === 't-main' ? selectedData.clip.zoom : 1.0})`, transition: 'transform 0.1s ease-out' }}>
-            {selectedData?.clip?.type === 'image' ? (
-              <img src={project.activePreviewUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="preview" />
+        
+        {/* Layer 0: Main Reel (Bottom) */}
+        {activeMainClips.map(clip => (
+          <div key={clip.id} style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1, transform: `scale(${clip.zoom || 1})`, opacity: project.tracks[0].muted ? 0.5 : 1 }}>
+            {clip.type === 'image' ? (
+              <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="main" />
             ) : (
-              <video ref={videoRef} src={project.activePreviewUrl} onTimeUpdate={handleTimeUpdate} style={{ width: '100%', height: '100%', objectFit: 'contain' }} playsInline loop />
+              <video className="compositor-media" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} playsInline muted={clip.muted || project.tracks[0].muted} />
             )}
           </div>
-        ) : (
-          <p style={{ color: '#444', fontSize: '14px' }}>Sovereign Engine Idle</p>
-        )}
-        
-        {project.tracks[1].clips.length > 0 && (
-           <div onTouchStart={handleCensorTouchStart} onTouchMove={handleCensorTouchMove} onTouchEnd={handleCensorTouchEnd}
-             style={{ position: 'absolute', top: `${censorRenderPos.y}%`, left: `${censorRenderPos.x}%`, transform: 'translate(-50%, -50%)', width: '80px', height: '80px', backgroundColor: 'rgba(233, 30, 99, 0.8)', border: '2px solid #fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: 'bold', zIndex: 20, boxShadow: selectedData?.clip?.id === project.tracks[1].clips[0].id ? '0 0 15px #fff' : 'none' }}>
-             DRAG
-           </div>
-        )}
+        ))}
+
+        {/* Layer 1: PIP & Overlays (Middle) */}
+        {activePipClips.map(clip => {
+          if (clip.type === 'censor') {
+            // Find live tracking position based on Master Clock
+            let posX = 50, posY = 50;
+            if (clip.keyframes?.length > 0 && !isDraggingCensor.current) {
+              const pastKf = clip.keyframes.filter(kf => kf.time <= currentTime);
+              if (pastKf.length > 0) {
+                posX = pastKf[pastKf.length - 1].x;
+                posY = pastKf[pastKf.length - 1].y;
+              }
+            } else if (isDraggingCensor.current && project.selectedClipId === clip.id) {
+              posX = censorRenderPos.x;
+              posY = censorRenderPos.y;
+            }
+
+            return (
+              <div key={clip.id} onTouchStart={project.selectedClipId === clip.id ? handleCensorTouchStart : undefined} onTouchMove={project.selectedClipId === clip.id ? handleCensorTouchMove : undefined} onTouchEnd={project.selectedClipId === clip.id ? handleCensorTouchEnd : undefined}
+                style={{ 
+                  position: 'absolute', top: `${posY}%`, left: `${posX}%`, transform: 'translate(-50%, -50%)', width: '80px', height: '80px', 
+                  backgroundColor: 'rgba(233, 30, 99, 0.8)', border: '2px solid #fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  color: 'white', fontSize: '10px', fontWeight: 'bold', zIndex: 10, boxShadow: project.selectedClipId === clip.id ? '0 0 15px #fff' : 'none'
+                }}>
+                DRAG
+              </div>
+            );
+          }
+
+          // Render secondary videos/images on top
+          return (
+            <div key={clip.id} style={{ position: 'absolute', width: '35%', height: '35%', top: '10%', right: '10%', zIndex: 5, border: project.selectedClipId === clip.id ? '2px solid #2196F3' : '2px solid #fff', borderRadius: '8px', overflow: 'hidden' }}>
+              {clip.type === 'image' ? (
+                <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="pip" />
+              ) : (
+                <video className="compositor-media" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted={clip.muted || project.tracks[1].muted} />
+              )}
+            </div>
+          );
+        })}
+
+        {/* Layer 2: Audio (Invisible) */}
+        {activeAudioClips.map(clip => (
+          <audio key={clip.id} className="compositor-media" src={clip.url} muted={clip.muted || project.tracks[2].muted} />
+        ))}
+
+        {activeMainClips.length === 0 && activePipClips.length === 0 && <p style={{ color: '#444', fontSize: '14px', zIndex: 0 }}>Sovereign Compositor Ready</p>}
       </div>
 
+      {/* 2. Transport */}
       <div style={{ height: '40px', backgroundColor: '#1A1A1A', display: 'flex', alignItems: 'center', padding: '0 15px', justifyContent: 'space-between', borderBottom: '1px solid #222' }}>
          <span style={{ fontSize: '12px', color: '#888', fontFamily: 'monospace' }}>{currentTime.toFixed(2)}s</span>
-         <button onClick={() => videoRef.current?.play()} style={{ background: 'none', color: '#fff', border: 'none', fontSize: '20px' }}>▶</button>
+         <button onClick={togglePlayback} style={{ background: 'none', color: '#fff', border: 'none', fontSize: '20px' }}>{isPlaying ? '⏸' : '▶'}</button>
          <span style={{ fontSize: '12px', color: '#888', fontFamily: 'monospace' }}>{project.duration.toFixed(2)}s</span>
       </div>
 
       {/* 3. Fully Interactive Multi-Track Timeline */}
-      <div 
-        onTouchMove={handleTimelineTouchMove}
-        onTouchEnd={handleTimelineTouchEnd}
-        style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', backgroundColor: '#121212', position: 'relative', paddingBottom: '80px' }}
-      >
+      <div onTouchMove={handleTimelineTouchMove} onTouchEnd={handleTimelineTouchEnd} style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', backgroundColor: '#121212', position: 'relative', paddingBottom: '80px' }}>
         <div style={{ position: 'relative', minWidth: `${project.duration * project.zoomLevel + 100}px`, paddingTop: '30px' }}>
           
-          {/* DRAGGABLE PLAYHEAD */}
-          <div 
-            onTouchStart={(e) => startInteraction(e, 'scrub', { initialStart: currentTime })}
-            style={{ position: 'absolute', left: `${currentTime * project.zoomLevel + 70}px`, top: 0, bottom: 0, width: '2px', backgroundColor: '#E91E63', zIndex: 50 }}
-          >
+          <div onTouchStart={(e) => startInteraction(e, 'scrub', { initialStart: currentTime })}
+            style={{ position: 'absolute', left: `${currentTime * project.zoomLevel + 70}px`, top: 0, bottom: 0, width: '2px', backgroundColor: '#E91E63', zIndex: 50 }}>
             <div style={{ position: 'absolute', top: '15px', left: '-6px', width: '14px', height: '14px', backgroundColor: '#E91E63', borderRadius: '50% 50% 0 50%', transform: 'rotate(45deg)', boxShadow: '0 0 4px rgba(0,0,0,0.5)' }} />
           </div>
 
           {project.tracks.map(track => (
             <div key={track.id} style={{ display: 'flex', marginBottom: '8px', height: '55px', position: 'relative', backgroundColor: '#1A1A1A' }}>
-              
               <div style={{ position: 'sticky', left: 0, width: '70px', backgroundColor: '#222', borderRight: '1px solid #333', zIndex: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 8px' }}>
                 <span style={{ fontSize: '10px', color: '#fff', fontWeight: 'bold' }}>{track.name}</span>
                 <button onClick={() => toggleTrackMute(track.id)} style={{ background: track.muted ? '#E91E63' : '#444', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '8px', padding: '4px', marginTop: '4px' }}>
@@ -240,17 +283,14 @@ export default function Editor() {
 
               <div style={{ position: 'relative', flex: 1 }} onClick={(e) => { if (e.target === e.currentTarget) setProject(p => ({ ...p, selectedClipId: null })) }}>
                 {track.clips.map(clip => (
-                  <div key={clip.id} 
-                    onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime })}
+                  <div key={clip.id} onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime })}
                     style={{
                       position: 'absolute', left: `${clip.timelineStartTime * project.zoomLevel}px`, width: `${clip.duration * project.zoomLevel}px`,
                       backgroundColor: clip.color, height: '100%', borderRadius: '4px', border: selectedData?.clip?.id === clip.id ? '2px solid #fff' : '1px solid #000',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', opacity: track.muted ? 0.5 : 1
-                    }}
-                  >
+                    }}>
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', padding: '0 5px', pointerEvents: 'none' }}>{clip.name} {clip.muted && '🔇'}</span>
 
-                    {/* Trim Handles */}
                     {selectedData?.clip?.id === clip.id && (
                       <>
                         <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'left', initialStart: clip.timelineStartTime, initialDuration: clip.duration })}
@@ -292,8 +332,6 @@ export default function Editor() {
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                 <span style={{ fontSize: '10px', color: '#888' }}>Zoom</span>
                 <input type="range" min="1" max="3" step="0.1" value={selectedData.clip.zoom} onChange={(e) => updateSelectedClip('zoom', parseFloat(e.target.value))} style={{ width: '60px' }} />
-                <span style={{ fontSize: '10px', color: '#888', marginLeft: '10px' }}>Speed</span>
-                <input type="range" min="0.25" max="2" step="0.25" value={selectedData.clip.speed} onChange={(e) => updateSelectedClip('speed', parseFloat(e.target.value))} style={{ width: '60px' }} />
               </div>
             )}
             <button 
