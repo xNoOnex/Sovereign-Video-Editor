@@ -32,19 +32,22 @@ jobs:
         working-directory: ./android
         run: ./gradlew assembleRelease
 
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: sovereign
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          buildToolsVersion: 34.0.0
+      - name: Sign APK Natively
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          # Securely decode the pure key you saved
+          echo "$KEYSTORE_BASE64" | tr -d '\n\r ' | base64 --decode > sovereign-key.jks
+          
+          # Find the newest apksigner already installed on the GitHub runner
+          APKSIGNER=$(find /usr/local/lib/android/sdk/build-tools -name "apksigner" | sort -r | head -n 1)
+          
+          # Sign the APK
+          $APKSIGNER sign --ks sovereign-key.jks --ks-pass env:KEYSTORE_PASSWORD --out Sovereign-Video-Editor-Signed.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Sovereign-Video-Editor-Signed-APK
-          path: ${{steps.sign_app.outputs.signedReleaseFile}}
+          path: Sovereign-Video-Editor-Signed.apk
