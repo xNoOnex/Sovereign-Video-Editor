@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/SovereignTools1/',
+  base: './', // CRITICAL: Forces relative asset routing
 })
