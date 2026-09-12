@@ -34,16 +34,15 @@ jobs:
 
       - name: Sign APK Natively
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          # Securely decode the pure key you saved
-          echo "$KEYSTORE_BASE64" | tr -d '\n\r ' | base64 --decode > sovereign-key.jks
+          # Decrypt the keystore file directly from the Git repository
+          openssl enc -d -aes-256-cbc -salt -pbkdf2 -in sovereign-key.enc -out sovereign-key.jks -pass pass:$KEYSTORE_PASSWORD
           
-          # Find the newest apksigner already installed on the GitHub runner
+          # Find the newest apksigner
           APKSIGNER=$(find /usr/local/lib/android/sdk/build-tools -name "apksigner" | sort -r | head -n 1)
           
-          # Sign the APK
+          # Sign the APK with the newly decrypted file
           $APKSIGNER sign --ks sovereign-key.jks --ks-pass env:KEYSTORE_PASSWORD --out Sovereign-Video-Editor-Signed.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Upload Signed APK
