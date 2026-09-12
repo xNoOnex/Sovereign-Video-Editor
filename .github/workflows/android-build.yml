@@ -1,4 +1,4 @@
-name: Build Release APK
+name: Build and Sign Production APK
 
 on:
   push:
@@ -32,8 +32,18 @@ jobs:
         working-directory: ./android
         run: ./gradlew assembleRelease
 
-      - name: Upload Unsigned APK
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: sovereign
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEYSTORE_PASSWORD }}
+
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Sovereign-Video-Editor-Unsigned
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          name: Sovereign-Video-Editor-Signed-APK
+          path: ${{steps.sign_app.outputs.signedReleaseFile}}
