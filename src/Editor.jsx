@@ -19,7 +19,9 @@ const Icons = {
   Load: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6zm-4 10c0-1.66-1.34-3-3-3s-3 1.34-3 3 1.34 3 3 3 3-1.34 3-3zm-6-2.5V21h10v-4.5l-5-5-5 5zM5 19v-2h4v2H5zm0-4v-2h8v2H5zm0-4V9h14v2H5z"/></svg>,
   GreenScreen: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>,
   Wand: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>,
-  Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54C9.77,21.83,9.97,22,10.21,22h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+  Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54C9.77,21.83,9.97,22,10.21,22h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>,
+  Cutout: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z"/></svg>,
+  Sticker: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
 };
 
 export default function Editor() {
@@ -31,6 +33,15 @@ export default function Editor() {
 
   const [appSettings, setAppSettings] = useState({ showGrid: false, autoPause: false, exportRes: '1080p' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showStickerModal, setShowStickerModal] = useState(false);
+  
+  // NEW: Persistent Local Storage Vault for Stickers
+  const [stickerVault, setStickerVault] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sovereign_stickers');
+    if (saved) { try { setStickerVault(JSON.parse(saved)); } catch (e) { } }
+  }, []);
 
   const [project, setProject] = useState({ duration: 30, zoomLevel: 15, selectedClipId: null, tracks: [{ id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }] });
   const [currentTime, setCurrentTime] = useState(0);
@@ -102,19 +113,37 @@ export default function Editor() {
     reader.readAsText(file); e.target.value = '';
   };
 
+  // NEW: Save current clip to Persistent Vault
+  const handleSaveSticker = () => {
+    if (!selectedData) return;
+    const newVault = [...stickerVault, selectedData.clip];
+    setStickerVault(newVault);
+    localStorage.setItem('sovereign_stickers', JSON.stringify(newVault));
+    alert("Sticker Saved to Vault!");
+  };
+
+  // NEW: Drop Sticker from Vault to Timeline
+  const handleDropSticker = (stickerClip) => {
+    setProject(prev => {
+      const newTracks = [...prev.tracks];
+      const spawnClip = { ...stickerClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime };
+      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
+      const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Sticker`, muted: false, clips: [spawnClip] };
+      const audioIndex = newTracks.findIndex(t => t.type === 'audio');
+      newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+      return { ...prev, duration: Math.max(prev.duration, currentTime + spawnClip.duration + 5), tracks: newTracks, selectedClipId: spawnClip.id };
+    });
+    setShowStickerModal(false);
+  };
+
   const handleAutoCaptions = () => {
     const audioTrack = project.tracks.find(t => t.type === 'audio');
     if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first."); return; }
     const targetAudio = audioTrack.clips[0];
     setProject(prev => {
-      const newTracks = [...prev.tracks];
-      const newClips = [];
+      const newTracks = [...prev.tracks]; const newClips = [];
       for(let i=0; i < targetAudio.duration; i+=2) {
-         newClips.push({
-           id: 'c-' + Math.random().toString(36).substr(2, 9), name: `Caption ${i}`, type: 'text', text: `Caption [${i}s]`,
-           timelineStartTime: targetAudio.timelineStartTime + i, duration: 2, color: '#E91E63', url: null, 
-           zoom: 1.5, panX: 0, panY: 0, posX: 50, posY: 90, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
-         });
+         newClips.push({ id: 'c-' + Math.random().toString(36).substr(2, 9), name: `Caption ${i}`, type: 'text', text: `Caption [${i}s]`, timelineStartTime: targetAudio.timelineStartTime + i, duration: 2, color: '#E91E63', url: null, zoom: 1.5, panX: 0, panY: 0, posX: 50, posY: 90, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] });
       }
       const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
       newTracks.splice(newTracks.findIndex(t => t.type === 'audio'), 0, { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Captions`, muted: false, clips: newClips });
@@ -145,12 +174,11 @@ export default function Editor() {
       const newTracks = [...prev.tracks];
       const newClip = { 
         id: newClipId, name: fileName, type: targetType === 'overlay' ? 'image' : targetType, 
-        timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, audioDucking: false,
+        timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false,
         zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
       };
       if (targetType === 'audio') {
-        const audioTrack = newTracks.find(t => t.type === 'audio');
-        if (audioTrack) audioTrack.clips.push(newClip);
+        const audioTrack = newTracks.find(t => t.type === 'audio'); if (audioTrack) audioTrack.clips.push(newClip);
       } else {
         const prefix = targetType === 'main_video' ? 'V' : 'Layer ';
         const count = newTracks.filter(t => t.type === targetType).length + 1;
@@ -168,8 +196,7 @@ export default function Editor() {
     const file = e.target.files[0]; if (!file) return;
     const isImage = file.type.startsWith('image/'); const isAudio = file.type.startsWith('audio/');
     let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
-    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color);
-    e.target.value = ''; 
+    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color); e.target.value = ''; 
   };
 
   const handleAddText = () => {
@@ -177,14 +204,12 @@ export default function Editor() {
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClip = { 
-        id: 'c-' + Math.random().toString(36).substr(2, 9), name: textInput, type: 'text', text: textInput,
-        timelineStartTime: currentTime, duration: 5, color: '#E91E63', url: null, 
+        id: 'c-' + Math.random().toString(36).substr(2, 9), name: textInput, type: 'text', text: textInput, timelineStartTime: currentTime, duration: 5, color: '#E91E63', url: null, 
         zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
       };
       const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
       const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Text ${overlayCount}`, muted: false, clips: [newClip] };
-      const audioIndex = newTracks.findIndex(t => t.type === 'audio');
-      newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+      const audioIndex = newTracks.findIndex(t => t.type === 'audio'); newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
       return { ...prev, duration: Math.max(prev.duration, currentTime + 10), tracks: newTracks, selectedClipId: newClip.id };
     });
   };
@@ -196,14 +221,23 @@ export default function Editor() {
     if (embedPayload && steganographyFileRef.current?.files[0]) { script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`; }
     const scaleMap = { '1080p': '1920:1080', '4K': '3840:2160' };
     script += `  -filter_complex "\\\n    [0:v]scale=${scaleMap[appSettings.exportRes]}[bg]; \\\n`;
+    
     let overlayIndex = 1;
     project.tracks.filter(t => t.type === 'overlay').forEach(track => {
       track.clips.forEach(clip => {
-        if (clip.chromaKey) { script += `    [${overlayIndex}:v]colorkey=0x00FF00:0.3:0.2[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; } 
-        else { script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; }
+        let fx = '';
+        if (clip.chromaKey) fx = `colorkey=0x00FF00:0.3:0.2`;
+        if (clip.magicCutout) fx = `rembg`; // Flag for WASM processor
+        
+        if (fx) {
+          script += `    [${overlayIndex}:v]${fx}[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
+        } else {
+          script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
+        }
         overlayIndex++;
       });
     });
+    
     const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
     if (duckingAudio) { script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`; }
     script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mkv`;
@@ -228,6 +262,17 @@ export default function Editor() {
         return { ...prev, tracks: newTracks, selectedClipId: null };
       });
     }
+  };
+
+  const updateSelectedClip = (key, value) => {
+    if (!selectedData) return;
+    setProject(prev => {
+      const newTracks = prev.tracks.map(t => {
+        if (t.id !== selectedData.trackId) return t;
+        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
+      });
+      return { ...prev, tracks: newTracks };
+    });
   };
 
   const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
@@ -378,6 +423,27 @@ export default function Editor() {
         </div>
       )}
 
+      {/* NEW: THE STICKER VAULT MODAL */}
+      {showStickerModal && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: '#141414', borderTop: '1px solid #333', borderRadius: '20px 20px 0 0', padding: '20px', width: '100%', height: '60%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', color: '#FF9800' }}>Sticker Vault</h2>
+              <button onClick={() => setShowStickerModal(false)} style={{ background: 'none', color: '#FFF', border: 'none', fontSize: '14px', fontWeight: 'bold' }}>Close</button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', overflowY: 'auto', flex: 1 }}>
+              {stickerVault.length === 0 ? <p style={{ color: '#888', fontSize: '12px' }}>Your vault is empty. Cut out an object and tap "Save Sticker" to add it here.</p> : 
+                stickerVault.map((s, i) => (
+                  <div key={i} onClick={() => handleDropSticker(s)} style={{ width: '80px', height: '80px', backgroundColor: '#222', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'pointer', border: '1px solid #444' }}>
+                     {s.type === 'text' ? <span style={{ fontSize: '30px' }}>{s.text}</span> : <span style={{ fontSize: '10px', color: '#AAA', textAlign: 'center', wordBreak: 'break-all' }}>{s.name}</span>}
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } `}</style>
 
       <input type="file" accept=".json" ref={loadProjectRef} onChange={handleLoadProject} style={{ display: 'none' }} />
@@ -425,7 +491,10 @@ export default function Editor() {
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; renderZoom = pastKf[pastKf.length - 1].zoom; originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity; }
             } else if (isActivelyTouched(clip.id)) { posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom; originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity; }
 
-            const visualFilter = clip.chromaKey ? 'hue-rotate(90deg) drop-shadow(0 0 10px #000)' : 'none';
+            // VISUAL MOCK FOR CHROMA KEY AND AI CUTOUT
+            let visualFilter = 'none';
+            if (clip.chromaKey) visualFilter = 'hue-rotate(90deg) drop-shadow(0 0 10px #000)';
+            if (clip.magicCutout) visualFilter = 'drop-shadow(0 0 15px #FF9800) contrast(1.2)';
 
             return (
               <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
@@ -493,6 +562,8 @@ export default function Editor() {
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
             <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text</span></button>
+            {/* NEW: Open Sticker Vault Button */}
+            <button onClick={() => setShowStickerModal(true)} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Stickers</span></button>
             <button onClick={handleAutoCaptions} style={{ ...toolIconBtn, color: '#9C27B0' }}><Icons.Wand /> <span style={{...toolLabel, color: '#9C27B0'}}>Captions</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             {isRecording ? (
@@ -508,8 +579,13 @@ export default function Editor() {
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             
+            {/* NEW: AI Cutout and Save Sticker Tools */}
             {selectedData.track.type === 'overlay' && selectedData.clip.type !== 'text' && (
-              <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
+              <>
+                <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
+                <button onClick={() => updateSelectedClip('magicCutout', !selectedData.clip.magicCutout)} style={{ ...toolIconBtn, color: selectedData.clip.magicCutout ? '#FF9800' : '#ECECEC' }}><Icons.Cutout /> <span style={{...toolLabel, color: selectedData.clip.magicCutout ? '#FF9800' : '#AAA'}}>Cutout</span></button>
+                <button onClick={handleSaveSticker} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Save</span></button>
+              </>
             )}
             {selectedData.track.type === 'audio' && (
               <button onClick={() => updateSelectedClip('audioDucking', !selectedData.clip.audioDucking)} style={{ ...toolIconBtn, color: selectedData.clip.audioDucking ? '#4CAF50' : '#ECECEC' }}><Icons.Mic /> <span style={{...toolLabel, color: selectedData.clip.audioDucking ? '#4CAF50' : '#AAA'}}>Ducking</span></button>
