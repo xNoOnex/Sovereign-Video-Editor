@@ -144,9 +144,7 @@ export default function Editor() {
     e.target.value = ''; 
   };
 
-  // NEW: Dedicated Emoji / Text Engine
   const handleAddText = () => {
-    // Triggers standard Android keyboard for typing or picking emojis
     const textInput = window.prompt("Enter Text or Emoji:");
     if (!textInput) return;
     
@@ -180,7 +178,8 @@ export default function Editor() {
                 { 
                   time: timeRef.current, 
                   zoom: updatedClip.zoom, 
-                  x: updatedClip.posX, y: updatedClip.posY, 
+                  x: t.type === 'overlay' ? updatedClip.posX : updatedClip.panX, 
+                  y: t.type === 'overlay' ? updatedClip.posY : updatedClip.panY, 
                   originX: updatedClip.originX, originY: updatedClip.originY, 
                   opacity: updatedClip.opacity 
                 }
@@ -213,22 +212,25 @@ export default function Editor() {
     if (e.touches.length === 2 && selectedData.track.type === 'main_video') {
       const center = getPinchCenter(e.touches, rect);
       pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: selectedData.clip.zoom || 1, originX: center.x, originY: center.y, clipId: selectedData.clip.id, trackId: selectedData.trackId };
-      setLiveTransform(prev => ({ ...prev, originX: center.x, originY: center.y }));
+      setLiveTransform({ posX: selectedData.clip.posX || 50, posY: selectedData.clip.posY || 50, panX: selectedData.clip.panX || 0, panY: selectedData.clip.panY || 0, zoom: selectedData.clip.zoom || 1, originX: center.x, originY: center.y, opacity: selectedData.clip.opacity ?? 1 });
     } 
     else if (e.touches.length === 1 && selectedData.track.type === 'main_video') {
       panRef.current = { active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startPanX: selectedData.clip.panX || 0, startPanY: selectedData.clip.panY || 0, clipId: selectedData.clip.id, trackId: selectedData.trackId };
+      setLiveTransform({ posX: selectedData.clip.posX || 50, posY: selectedData.clip.posY || 50, panX: selectedData.clip.panX || 0, panY: selectedData.clip.panY || 0, zoom: selectedData.clip.zoom || 1, originX: selectedData.clip.originX || 50, originY: selectedData.clip.originY || 50, opacity: selectedData.clip.opacity ?? 1 });
     }
   };
 
-  const handleOverlayTouchStart = (e, clipId, trackId, currentZoom) => {
+  const handleOverlayTouchStart = (e, clipId, trackId, clipData) => {
     e.stopPropagation();
     setProject(prev => ({ ...prev, selectedClipId: clipId }));
+    
+    // Sync liveTransform instantly so the item doesn't jump
+    setLiveTransform({ posX: clipData.posX || 50, posY: clipData.posY || 50, panX: clipData.panX || 0, panY: clipData.panY || 0, zoom: clipData.zoom || 1, originX: clipData.originX || 50, originY: clipData.originY || 50, opacity: clipData.opacity ?? 1 });
 
     if (e.touches.length >= 2) {
       const rect = containerRef.current.getBoundingClientRect();
       const center = getPinchCenter(e.touches, rect);
-      pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: currentZoom || 1, originX: center.x, originY: center.y, clipId, trackId };
-      setLiveTransform(prev => ({ ...prev, originX: center.x, originY: center.y }));
+      pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: clipData.zoom || 1, originX: center.x, originY: center.y, clipId, trackId };
     } else {
       const rect = e.currentTarget.getBoundingClientRect();
       const centerX = rect.left + (rect.width / 2);
@@ -243,7 +245,6 @@ export default function Editor() {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     
-    // FIX: Massive Scaling Freedom. Bounds changed to 5% (0.05) and 1500% (15.0)
     if (pinchRef.current.active && e.touches.length === 2) {
       const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
       const newZoom = Math.max(0.05, Math.min(15.0, pinchRef.current.startZoom * scaleMultiplier));
@@ -273,7 +274,10 @@ export default function Editor() {
   const startInteraction = (e, type, payload) => {
     e.stopPropagation();
     interaction.current = { type, startX: e.touches[0].clientX, ...payload };
-    if (type === 'trim' || type === 'move') setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
+    if (type === 'trim' || type === 'move') {
+      setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
+      setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 });
+    }
   };
 
   const handleTimelineTouchMove = (e) => {
@@ -314,6 +318,7 @@ export default function Editor() {
   const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
 
+  // FIX: Only override transform logic if the user is literally touching the viewport right now
   const isActivelyTouched = (clipId) => 
     (pinchRef.current.active && pinchRef.current.clipId === clipId) || 
     (panRef.current.active && panRef.current.clipId === clipId) || 
@@ -354,17 +359,15 @@ export default function Editor() {
               const pastKf = clip.transformKeyframes.filter(kf => kf.time <= currentTime);
               if (pastKf.length > 0) {
                  renderZoom = pastKf[pastKf.length - 1].zoom; renderPanX = pastKf[pastKf.length - 1].x; renderPanY = pastKf[pastKf.length - 1].y;
-                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50;
-                 renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity;
+                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity;
               }
             } else if (isActivelyTouched(clip.id)) {
-               renderZoom = liveTransform.zoom || renderZoom; renderPanX = liveTransform.panX || renderPanX; renderPanY = liveTransform.panY || renderPanY;
-               originX = liveTransform.originX || originX; originY = liveTransform.originY || originY;
-               renderOpacity = liveTransform.opacity ?? renderOpacity;
+               renderZoom = liveTransform.zoom; renderPanX = liveTransform.panX; renderPanY = liveTransform.panY;
+               originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity;
             }
 
             return (
-              <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }} 
+              <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }} 
                    style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1 + trackIndex, 
                             transformOrigin: `${originX}% ${originY}%`, 
                             transform: `translate(${renderPanX}px, ${renderPanY}px) scale(${renderZoom})`, 
@@ -376,7 +379,7 @@ export default function Editor() {
           });
         })}
 
-        {/* Universal Overlays (Videos, Images, Emojis, Text) */}
+        {/* Overlays & Text */}
         {overlayTracks.map((track, trackIndex) => {
           const activeClips = track.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
           return activeClips.map(clip => {
@@ -390,15 +393,15 @@ export default function Editor() {
                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity;
               }
             } else if (isActivelyTouched(clip.id)) {
-              posX = liveTransform.posX || posX; posY = liveTransform.posY || posY; renderZoom = liveTransform.zoom || renderZoom;
-              originX = liveTransform.originX || originX; originY = liveTransform.originY || originY; renderOpacity = liveTransform.opacity ?? renderOpacity;
+              posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom;
+              originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity;
             }
 
             return (
               <div 
                 key={clip.id} 
-                onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, renderZoom)}
-                onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }}
+                onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)}
+                onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
                 style={{ 
                   position: 'absolute', top: `${posY}%`, left: `${posX}%`, 
                   transformOrigin: `${originX}% ${originY}%`, 
@@ -414,10 +417,7 @@ export default function Editor() {
                 }}
               >
                 {clip.type === 'text' ? (
-                  // Native Text/Emoji Renderer
-                  <div style={{ fontSize: '80px', padding: '10px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
-                    {clip.text}
-                  </div>
+                  <div style={{ fontSize: '80px', padding: '10px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div>
                 ) : clip.type === 'image' ? (
                   <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" />
                 ) : (
@@ -471,8 +471,8 @@ export default function Editor() {
                 {track.clips.map(clip => (
                   <div 
                     key={clip.id} 
-                    onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }}
-                    onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime })}
+                    onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
+                    onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime, clipData: clip })}
                     style={{
                       position: 'absolute', left: `${clip.timelineStartTime * project.zoomLevel}px`, width: `${clip.duration * project.zoomLevel}px`,
                       height: '100%', borderRadius: '6px', background: `linear-gradient(180deg, ${clip.color}DD 0%, ${clip.color} 100%)`, 
@@ -483,8 +483,8 @@ export default function Editor() {
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', padding: '0 10px', pointerEvents: 'none' }}>{clip.name}</span>
                     {selectedData?.clip?.id === clip.id && (
                       <>
-                        <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'left', initialStart: clip.timelineStartTime, initialDuration: clip.duration })} style={{ position: 'absolute', left: '-2px', top: 0, bottom: 0, width: '24px', backgroundColor: '#FFF', borderRadius: '6px 0 0 6px', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}><div style={{ width: '4px', height: '20px', borderLeft: '1px solid #CCC', borderRight: '1px solid #CCC' }} /></div>
-                        <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'right', initialStart: clip.timelineStartTime, initialDuration: clip.duration })} style={{ position: 'absolute', right: '-2px', top: 0, bottom: 0, width: '24px', backgroundColor: '#FFF', borderRadius: '0 6px 6px 0', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '-2px 0 5px rgba(0,0,0,0.3)' }}><div style={{ width: '4px', height: '20px', borderLeft: '1px solid #CCC', borderRight: '1px solid #CCC' }} /></div>
+                        <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'left', initialStart: clip.timelineStartTime, initialDuration: clip.duration, clipData: clip })} style={{ position: 'absolute', left: '-2px', top: 0, bottom: 0, width: '24px', backgroundColor: '#FFF', borderRadius: '6px 0 0 6px', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}><div style={{ width: '4px', height: '20px', borderLeft: '1px solid #CCC', borderRight: '1px solid #CCC' }} /></div>
+                        <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'right', initialStart: clip.timelineStartTime, initialDuration: clip.duration, clipData: clip })} style={{ position: 'absolute', right: '-2px', top: 0, bottom: 0, width: '24px', backgroundColor: '#FFF', borderRadius: '0 6px 6px 0', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '-2px 0 5px rgba(0,0,0,0.3)' }}><div style={{ width: '4px', height: '20px', borderLeft: '1px solid #CCC', borderRight: '1px solid #CCC' }} /></div>
                       </>
                     )}
                   </div>
@@ -502,10 +502,7 @@ export default function Editor() {
             <button onClick={() => mainMediaRef.current.click()} style={toolIconBtn}><Icons.AddVideo /> <span style={toolLabel}>Primary</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
-            
-            {/* NEW: Text/Emoji Button */}
             <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text/Emoji</span></button>
-            
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => audioMediaRef.current.click()} style={toolIconBtn}><Icons.AddAudio /> <span style={toolLabel}>Audio</span></button>
           </>
@@ -513,17 +510,14 @@ export default function Editor() {
           <>
             <button onClick={() => setProject(prev => ({...prev, selectedClipId: null}))} style={{...toolIconBtn, color: '#4CAF50'}}><Icons.Done /> <span style={{...toolLabel, color: '#4CAF50'}}>Done</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
-            
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
-
             {selectedData.track.type !== 'audio' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px' }}>
                 <span style={{ fontSize: '10px', color: '#00BCD4', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>Fade <span>{Math.round((selectedData.clip.opacity ?? 1) * 100)}%</span></span>
                 <input type="range" className="pro-slider" min="0" max="1" step="0.05" value={selectedData.clip.opacity ?? 1} onChange={(e) => handleOpacityChange(parseFloat(e.target.value))} />
               </div>
             )}
-            
             <button onClick={() => setProject(prev => { const newTracks = prev.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== selectedData.clip.id) })); return { ...prev, tracks: newTracks, selectedClipId: null }; })} style={{ ...toolIconBtn, color: '#f44336', marginLeft: 'auto' }}><Icons.Delete /> <span style={{...toolLabel, color: '#f44336'}}>Delete</span></button>
           </>
         )}
