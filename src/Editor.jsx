@@ -11,7 +11,8 @@ const Icons = {
   Unmute: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>,
   AddVideo: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/></svg>,
   AddAudio: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>,
-  Done: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+  Done: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>,
+  Text: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
 };
 
 export default function Editor() {
@@ -143,7 +144,29 @@ export default function Editor() {
     e.target.value = ''; 
   };
 
-  // NEW: Bulletproof Immutable Keyframing Engine
+  // NEW: Dedicated Emoji / Text Engine
+  const handleAddText = () => {
+    // Triggers standard Android keyboard for typing or picking emojis
+    const textInput = window.prompt("Enter Text or Emoji:");
+    if (!textInput) return;
+    
+    setProject(prev => {
+      const newTracks = [...prev.tracks];
+      const newClip = { 
+        id: 'c-' + Math.random().toString(36).substr(2, 9), name: textInput, type: 'text', text: textInput,
+        timelineStartTime: currentTime, duration: 5, color: '#E91E63', url: null, 
+        zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
+      };
+      
+      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
+      const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Text ${overlayCount}`, muted: false, clips: [newClip] };
+      const audioIndex = newTracks.findIndex(t => t.type === 'audio');
+      newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+      
+      return { ...prev, duration: Math.max(prev.duration, currentTime + 10), tracks: newTracks, selectedClipId: newClip.id };
+    });
+  };
+
   const saveTransform = (clipId, trackId, updates) => {
     setProject(prev => {
       const newTracks = prev.tracks.map(t => {
@@ -197,19 +220,16 @@ export default function Editor() {
     }
   };
 
-  // NEW: Smart Overlay Touch Routing (Intercepts 2 fingers for zooming)
   const handleOverlayTouchStart = (e, clipId, trackId, currentZoom) => {
     e.stopPropagation();
     setProject(prev => ({ ...prev, selectedClipId: clipId }));
 
     if (e.touches.length >= 2) {
-      // Route to Pinch Engine
       const rect = containerRef.current.getBoundingClientRect();
       const center = getPinchCenter(e.touches, rect);
       pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: currentZoom || 1, originX: center.x, originY: center.y, clipId, trackId };
       setLiveTransform(prev => ({ ...prev, originX: center.x, originY: center.y }));
     } else {
-      // Route to Drag Engine
       const rect = e.currentTarget.getBoundingClientRect();
       const centerX = rect.left + (rect.width / 2);
       const centerY = rect.top + (rect.height / 2);
@@ -223,14 +243,13 @@ export default function Editor() {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     
-    // 1. Process Pinch (Works for Overlays AND Main Video now)
+    // FIX: Massive Scaling Freedom. Bounds changed to 5% (0.05) and 1500% (15.0)
     if (pinchRef.current.active && e.touches.length === 2) {
       const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
-      const newZoom = Math.max(0.2, Math.min(5.0, pinchRef.current.startZoom * scaleMultiplier));
+      const newZoom = Math.max(0.05, Math.min(15.0, pinchRef.current.startZoom * scaleMultiplier));
       setLiveTransform(prev => ({ ...prev, zoom: newZoom })); 
       saveTransform(pinchRef.current.clipId, pinchRef.current.trackId, { zoom: newZoom, originX: pinchRef.current.originX, originY: pinchRef.current.originY });
     } 
-    // 2. Process Main Video Pan
     else if (panRef.current.active && e.touches.length === 1) {
       const deltaX = e.touches[0].clientX - panRef.current.startX;
       const deltaY = e.touches[0].clientY - panRef.current.startY;
@@ -239,7 +258,6 @@ export default function Editor() {
       setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY }));
       saveTransform(panRef.current.clipId, panRef.current.trackId, { panX: newPanX, panY: newPanY });
     }
-    // 3. Process Overlay Drag
     else if (isDraggingOverlay.current && activeDragClip.current && e.touches.length === 1) {
       const targetX = e.touches[0].clientX - dragOffset.current.x;
       const targetY = e.touches[0].clientY - dragOffset.current.y;
@@ -315,7 +333,7 @@ export default function Editor() {
       <input type="file" accept="*/*" ref={pipMediaRef} onChange={(e) => handleAddMedia(e, 'overlay')} style={{ display: 'none' }} />
       <input type="file" accept="audio/*" ref={audioMediaRef} onChange={(e) => handleAddMedia(e, 'audio')} style={{ display: 'none' }} />
 
-      {/* 1. VIEWPORT: touchAction 'none' physically prevents browser scrolling logic */}
+      {/* 1. VIEWPORT */}
       <div 
         ref={containerRef} 
         onTouchStart={handleViewportTouchStart} 
@@ -358,7 +376,7 @@ export default function Editor() {
           });
         })}
 
-        {/* Overlays */}
+        {/* Universal Overlays (Videos, Images, Emojis, Text) */}
         {overlayTracks.map((track, trackIndex) => {
           const activeClips = track.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
           return activeClips.map(clip => {
@@ -385,13 +403,22 @@ export default function Editor() {
                   position: 'absolute', top: `${posY}%`, left: `${posX}%`, 
                   transformOrigin: `${originX}% ${originY}%`, 
                   transform: `translate(-50%, -50%) scale(${renderZoom})`, 
-                  width: '35%', height: '35%', zIndex: 50 + trackIndex, 
-                  border: project.selectedClipId === clip.id ? '2px solid #FFF' : '1px dashed rgba(255,255,255,0.4)', 
-                  borderRadius: '8px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer',
-                  opacity: renderOpacity
+                  width: clip.type === 'text' ? 'auto' : '35%', 
+                  height: clip.type === 'text' ? 'auto' : '35%', 
+                  zIndex: 50 + trackIndex, 
+                  border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), 
+                  borderRadius: '8px', 
+                  overflow: clip.type === 'text' ? 'visible' : 'hidden', 
+                  boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', 
+                  cursor: 'pointer', opacity: renderOpacity
                 }}
               >
-                {clip.type === 'image' ? (
+                {clip.type === 'text' ? (
+                  // Native Text/Emoji Renderer
+                  <div style={{ fontSize: '80px', padding: '10px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
+                    {clip.text}
+                  </div>
+                ) : clip.type === 'image' ? (
                   <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" />
                 ) : (
                   <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />
@@ -475,6 +502,10 @@ export default function Editor() {
             <button onClick={() => mainMediaRef.current.click()} style={toolIconBtn}><Icons.AddVideo /> <span style={toolLabel}>Primary</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
+            
+            {/* NEW: Text/Emoji Button */}
+            <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text/Emoji</span></button>
+            
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => audioMediaRef.current.click()} style={toolIconBtn}><Icons.AddAudio /> <span style={toolLabel}>Audio</span></button>
           </>
