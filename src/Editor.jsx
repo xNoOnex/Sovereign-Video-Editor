@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import imglyRemoveBackground from '@imgly/background-removal';
 
 const Icons = {
   Play: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
@@ -34,9 +35,10 @@ export default function Editor() {
   const [appSettings, setAppSettings] = useState({ showGrid: false, autoPause: false, exportRes: '1080p' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showStickerModal, setShowStickerModal] = useState(false);
-  
-  // NEW: Persistent Local Storage Vault for Stickers
   const [stickerVault, setStickerVault] = useState([]);
+  
+  // NEW: State to trigger the loading spinner while the WASM model boots up
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('sovereign_stickers');
@@ -113,16 +115,56 @@ export default function Editor() {
     reader.readAsText(file); e.target.value = '';
   };
 
-  // NEW: Save current clip to Persistent Vault
+  // NEW: The WebAssembly Execution Block
+  const executeWasmCutout = async () => {
+    if (!selectedData || selectedData.clip.type === 'text') return;
+    
+    // Safety check: The WASM model runs natively on images.
+    if (selectedData.clip.type === 'video') {
+      alert("AI cutout currently isolates subjects in images. Use the Chroma Key tool for video backgrounds!");
+      return;
+    }
+
+    setIsProcessingAI(true);
+    try {
+      const config = {
+        progress: (key, current, total) => {
+          console.log(`Downloading ${key}: ${current} of ${total}`);
+        }
+      };
+      
+      const imageBlob = await imglyRemoveBackground(selectedData.clip.url, config);
+      const newUrl = URL.createObjectURL(imageBlob);
+      
+      setProject(prev => {
+        const newTracks = prev.tracks.map(t => {
+          if (t.id !== selectedData.trackId) return t;
+          return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, url: newUrl, name: `Cutout_${c.id}.png`, magicCutout: true } : c) };
+        });
+        return { ...prev, tracks: newTracks };
+      });
+    } catch (error) {
+      alert("AI Processing Failed. Ensure your browser allows WebAssembly.");
+    }
+    setIsProcessingAI(false);
+  };
+
+  // NEW: Physical file bridge. Saving the sticker downloads it so Termux can find the isolated asset.
   const handleSaveSticker = () => {
     if (!selectedData) return;
     const newVault = [...stickerVault, selectedData.clip];
     setStickerVault(newVault);
     localStorage.setItem('sovereign_stickers', JSON.stringify(newVault));
-    alert("Sticker Saved to Vault!");
+    
+    if (selectedData.clip.magicCutout) {
+      const a = document.createElement('a');
+      a.href = selectedData.clip.url;
+      a.download = selectedData.clip.name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    alert("Sticker Saved! If it was an AI Cutout, the transparent PNG has been downloaded so Termux can map it during export.");
   };
 
-  // NEW: Drop Sticker from Vault to Timeline
   const handleDropSticker = (stickerClip) => {
     setProject(prev => {
       const newTracks = [...prev.tracks];
@@ -167,13 +209,13 @@ export default function Editor() {
   };
   const stopRecording = () => { setIsRecording(false); setIsPlaying(false); if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop(); };
 
-  const insertMediaDirectly = (targetType, fileUrl, fileName, duration, defaultColor, forceStartTime = null) => {
+  const insertMediaDirectly = (targetType, fileUrl, fileName, duration, defaultColor, forceStartTime = null, explicitType = null) => {
     const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
     const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClip = { 
-        id: newClipId, name: fileName, type: targetType === 'overlay' ? 'image' : targetType, 
+        id: newClipId, name: fileName, type: explicitType || targetType, 
         timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false,
         zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
       };
@@ -194,9 +236,10 @@ export default function Editor() {
 
   const handleAddMedia = (e, targetType) => {
     const file = e.target.files[0]; if (!file) return;
-    const isImage = file.type.startsWith('image/'); const isAudio = file.type.startsWith('audio/');
+    const isImage = file.type.startsWith('image/'); const isAudio = file.type.startsWith('audio/'); const isVideo = file.type.startsWith('video/');
     let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
-    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color); e.target.value = ''; 
+    let finalType = isImage ? 'image' : (isVideo ? 'video' : 'audio');
+    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color, null, finalType); e.target.value = ''; 
   };
 
   const handleAddText = () => {
@@ -227,8 +270,6 @@ export default function Editor() {
       track.clips.forEach(clip => {
         let fx = '';
         if (clip.chromaKey) fx = `colorkey=0x00FF00:0.3:0.2`;
-        if (clip.magicCutout) fx = `rembg`; // Flag for WASM processor
-        
         if (fx) {
           script += `    [${overlayIndex}:v]${fx}[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
         } else {
@@ -423,7 +464,6 @@ export default function Editor() {
         </div>
       )}
 
-      {/* NEW: THE STICKER VAULT MODAL */}
       {showStickerModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ backgroundColor: '#141414', borderTop: '1px solid #333', borderRadius: '20px 20px 0 0', padding: '20px', width: '100%', height: '60%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -444,7 +484,7 @@ export default function Editor() {
         </div>
       )}
 
-      <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } `}</style>
+      <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } @keyframes spin { 100% { transform: rotate(360deg); } } `}</style>
 
       <input type="file" accept=".json" ref={loadProjectRef} onChange={handleLoadProject} style={{ display: 'none' }} />
       <input type="file" accept="*/*" ref={mainMediaRef} onChange={(e) => handleAddMedia(e, 'main_video')} style={{ display: 'none' }} />
@@ -491,14 +531,9 @@ export default function Editor() {
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; renderZoom = pastKf[pastKf.length - 1].zoom; originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity; }
             } else if (isActivelyTouched(clip.id)) { posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom; originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity; }
 
-            // VISUAL MOCK FOR CHROMA KEY AND AI CUTOUT
-            let visualFilter = 'none';
-            if (clip.chromaKey) visualFilter = 'hue-rotate(90deg) drop-shadow(0 0 10px #000)';
-            if (clip.magicCutout) visualFilter = 'drop-shadow(0 0 15px #FF9800) contrast(1.2)';
-
             return (
               <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
-                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity, filter: visualFilter }}
+                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity }}
               >
                 {clip.type === 'text' ? <div style={{ fontSize: '40px', padding: '5px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div> : clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> : <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
               </div>
@@ -562,7 +597,6 @@ export default function Editor() {
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
             <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text</span></button>
-            {/* NEW: Open Sticker Vault Button */}
             <button onClick={() => setShowStickerModal(true)} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Stickers</span></button>
             <button onClick={handleAutoCaptions} style={{ ...toolIconBtn, color: '#9C27B0' }}><Icons.Wand /> <span style={{...toolLabel, color: '#9C27B0'}}>Captions</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
@@ -579,11 +613,13 @@ export default function Editor() {
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             
-            {/* NEW: AI Cutout and Save Sticker Tools */}
             {selectedData.track.type === 'overlay' && selectedData.clip.type !== 'text' && (
               <>
-                <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
-                <button onClick={() => updateSelectedClip('magicCutout', !selectedData.clip.magicCutout)} style={{ ...toolIconBtn, color: selectedData.clip.magicCutout ? '#FF9800' : '#ECECEC' }}><Icons.Cutout /> <span style={{...toolLabel, color: selectedData.clip.magicCutout ? '#FF9800' : '#AAA'}}>Cutout</span></button>
+                <button onClick={executeWasmCutout} disabled={isProcessingAI} style={{ ...toolIconBtn, color: selectedData.clip.magicCutout ? '#FF9800' : '#ECECEC' }}>
+                  {isProcessingAI ? <div style={{width: 16, height: 16, border: '2px solid #FF9800', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite'}} /> : <Icons.Cutout />}
+                  <span style={{...toolLabel, color: selectedData.clip.magicCutout ? '#FF9800' : '#AAA'}}>{isProcessingAI ? 'Masking...' : 'Cutout'}</span>
+                </button>
+                
                 <button onClick={handleSaveSticker} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Save</span></button>
               </>
             )}
