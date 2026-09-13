@@ -18,7 +18,8 @@ const Icons = {
   Save: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>,
   Load: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6zm-4 10c0-1.66-1.34-3-3-3s-3 1.34-3 3 1.34 3 3 3 3-1.34 3-3zm-6-2.5V21h10v-4.5l-5-5-5 5zM5 19v-2h4v2H5zm0-4v-2h8v2H5zm0-4V9h14v2H5z"/></svg>,
   GreenScreen: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>,
-  Wand: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
+  Wand: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>,
+  Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54C9.77,21.83,9.97,22,10.21,22h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
 };
 
 export default function Editor() {
@@ -28,11 +29,11 @@ export default function Editor() {
   const loadProjectRef = useRef(null);
   const containerRef = useRef(null);
 
-  const [project, setProject] = useState({
-    duration: 30, zoomLevel: 15, selectedClipId: null,
-    tracks: [{ id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }]
-  });
+  // NEW: Global App Settings State
+  const [appSettings, setAppSettings] = useState({ showGrid: false, autoPause: false, exportRes: '1080p' });
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  const [project, setProject] = useState({ duration: 30, zoomLevel: 15, selectedClipId: null, tracks: [{ id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }] });
   const [currentTime, setCurrentTime] = useState(0);
   const timeRef = useRef(0); 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -96,27 +97,19 @@ export default function Editor() {
 
   const handleSaveProject = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(project));
-    const a = document.createElement('a');
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", "sovereign_project.json");
-    document.body.appendChild(a); a.click(); a.remove();
+    const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", "sovereign_project.json"); document.body.appendChild(a); a.click(); a.remove();
   };
 
   const handleLoadProject = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      try { setProject(JSON.parse(event.target.result)); } 
-      catch (e) { alert("Invalid Sovereign project file."); }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    reader.onload = (event) => { try { setProject(JSON.parse(event.target.result)); } catch (e) { alert("Invalid project file."); } };
+    reader.readAsText(file); e.target.value = '';
   };
 
   const handleAutoCaptions = () => {
     const audioTrack = project.tracks.find(t => t.type === 'audio');
-    if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first to map captions."); return; }
+    if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first."); return; }
     const targetAudio = audioTrack.clips[0];
     
     setProject(prev => {
@@ -178,18 +171,15 @@ export default function Editor() {
   };
 
   const handleAddMedia = (e, targetType) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const isImage = file.type.startsWith('image/');
-    const isAudio = file.type.startsWith('audio/');
+    const file = e.target.files[0]; if (!file) return;
+    const isImage = file.type.startsWith('image/'); const isAudio = file.type.startsWith('audio/');
     let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
     insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color);
     e.target.value = ''; 
   };
 
   const handleAddText = () => {
-    const textInput = window.prompt("Enter Text or Emoji:");
-    if (!textInput) return;
+    const textInput = window.prompt("Enter Text or Emoji:"); if (!textInput) return;
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClip = { 
@@ -206,22 +196,16 @@ export default function Editor() {
   };
 
   const compileFFmpegScript = () => {
-    let script = "# Sovereign FFmpeg Export Script\n# Pro Math Engine (Chroma, Ducking, Steganography)\n\nffmpeg \\\n";
+    let script = "# Sovereign FFmpeg Export Script\nffmpeg \\\n";
     let inputCount = 0;
-    project.tracks.forEach(track => {
-      track.clips.forEach(clip => {
-        if (clip.type !== 'text') { script += `  -i "${clip.name}" \\\n`; inputCount++; }
-      });
-    });
-
-    if (embedPayload && steganographyFileRef.current?.files[0]) {
-       script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`;
-    }
-
-    script += `  -filter_complex "\\\n    [0:v]scale=1920:1080[bg]; \\\n`;
-    let overlayIndex = 1;
+    project.tracks.forEach(track => { track.clips.forEach(clip => { if (clip.type !== 'text') { script += `  -i "${clip.name}" \\\n`; inputCount++; } }); });
+    if (embedPayload && steganographyFileRef.current?.files[0]) { script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`; }
     
-    // Chroma Key & Overlay Matrix
+    // Dynamic Resolution injection based on App Settings
+    const scaleMap = { '1080p': '1920:1080', '4K': '3840:2160' };
+    script += `  -filter_complex "\\\n    [0:v]scale=${scaleMap[appSettings.exportRes]}[bg]; \\\n`;
+    
+    let overlayIndex = 1;
     project.tracks.filter(t => t.type === 'overlay').forEach(track => {
       track.clips.forEach(clip => {
         if (clip.chromaKey) {
@@ -234,12 +218,8 @@ export default function Editor() {
       });
     });
     
-    // Audio Ducking Matrix
     const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
-    if (duckingAudio) {
-      script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`;
-    }
-
+    if (duckingAudio) { script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`; }
     script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mkv`;
     setFfmpegScript(script); setShowExportModal(true);
   };
@@ -266,17 +246,6 @@ export default function Editor() {
 
   const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
   
-  const updateSelectedClip = (key, value) => {
-    if (!selectedData) return;
-    setProject(prev => {
-      const newTracks = prev.tracks.map(t => {
-        if (t.id !== selectedData.trackId) return t;
-        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
-      });
-      return { ...prev, tracks: newTracks };
-    });
-  };
-
   const saveTransform = (clipId, trackId, updates) => {
     setProject(prev => {
       const newTracks = prev.tracks.map(t => {
@@ -339,7 +308,12 @@ export default function Editor() {
     }
   };
 
-  const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; };
+  const handleViewportTouchEnd = () => { 
+    pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; 
+    // NEW: Auto-Pause Feature execution
+    if (appSettings.autoPause && isPlaying) setIsPlaying(false);
+  };
+
   const startInteraction = (e, type, payload) => { e.stopPropagation(); interaction.current = { type, startX: e.touches[0].clientX, ...payload }; if (type === 'trim' || type === 'move') { setProject(prev => ({ ...prev, selectedClipId: payload.clipId })); setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 }); } };
   
   const handleTimelineTouchMove = (e) => {
@@ -374,6 +348,7 @@ export default function Editor() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
+      {/* EXPORT MODAL */}
       {showExportModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -392,6 +367,39 @@ export default function Editor() {
         </div>
       )}
 
+      {/* NEW: GLOBAL SETTINGS MODAL */}
+      {showSettingsModal && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', color: '#FFF' }}>Workspace Settings</h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#CCC' }}>Rule of Thirds Grid</span>
+                <input type="checkbox" checked={appSettings.showGrid} onChange={(e) => setAppSettings(p => ({...p, showGrid: e.target.checked}))} style={{ transform: 'scale(1.5)' }} />
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#CCC' }}>Auto-Pause on Touch Release</span>
+                <input type="checkbox" checked={appSettings.autoPause} onChange={(e) => setAppSettings(p => ({...p, autoPause: e.target.checked}))} style={{ transform: 'scale(1.5)' }} />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: '#CCC' }}>Export Target Resolution</span>
+                <select value={appSettings.exportRes} onChange={(e) => setAppSettings(p => ({...p, exportRes: e.target.value}))} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', padding: '8px', borderRadius: '4px' }}>
+                  <option value="1080p">1080p (FHD)</option>
+                  <option value="4K">4K (UHD)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowSettingsModal(false)} style={{ backgroundColor: '#4CAF50', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Save Settings</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } `}</style>
 
       <input type="file" accept=".json" ref={loadProjectRef} onChange={handleLoadProject} style={{ display: 'none' }} />
@@ -403,6 +411,21 @@ export default function Editor() {
         ref={containerRef} onTouchStart={handleViewportTouchStart} onTouchMove={handleViewportTouchMove} onTouchEnd={handleViewportTouchEnd} onClick={() => setProject(p => ({ ...p, selectedClipId: null }))}
         style={{ flex: '0 0 38%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', touchAction: 'none' }}
       >
+        {/* NEW: Rule of Thirds CSS Grid Overlay */}
+        {appSettings.showGrid && (
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 90, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }}>
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} />
+            <div />
+          </div>
+        )}
+
         {isRecording && <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, color: 'red', fontWeight: 'bold', fontSize: '12px', animation: 'blink 1s infinite' }}>● RECORDING</div>}
 
         {mainTracks.map((track, trackIndex) => {
@@ -432,14 +455,13 @@ export default function Editor() {
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; renderZoom = pastKf[pastKf.length - 1].zoom; originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity; }
             } else if (isActivelyTouched(clip.id)) { posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom; originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity; }
 
-            // Add simple local CSS filter for visual green screen mock if enabled
             const visualFilter = clip.chromaKey ? 'hue-rotate(90deg) drop-shadow(0 0 10px #000)' : 'none';
 
             return (
               <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
                 style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity, filter: visualFilter }}
               >
-                {clip.type === 'text' ? <div style={{ fontSize: '80px', padding: '10px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div> : clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> : <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
+                {clip.type === 'text' ? <div style={{ fontSize: '40px', padding: '5px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div> : clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> : <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
               </div>
             );
           });
@@ -454,6 +476,7 @@ export default function Editor() {
            <button onClick={togglePlayback} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{isPlaying ? <Icons.Pause /> : <Icons.Play />}</button>
          </div>
          <div style={{ display: 'flex', gap: '8px' }}>
+           <button onClick={() => setShowSettingsModal(true)} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Settings /></button>
            <button onClick={() => loadProjectRef.current.click()} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Load /></button>
            <button onClick={handleSaveProject} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Save /></button>
            <button onClick={compileFFmpegScript} style={{ backgroundColor: '#FFF', color: '#000', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Export /> Export</button>
@@ -515,7 +538,6 @@ export default function Editor() {
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             
-            {/* NEW: Pro Studio Tools (Green Screen & Audio Ducking) */}
             {selectedData.track.type === 'overlay' && selectedData.clip.type !== 'text' && (
               <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
             )}
@@ -525,10 +547,18 @@ export default function Editor() {
 
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             {selectedData.track.type !== 'audio' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px' }}>
-                <span style={{ fontSize: '10px', color: '#00BCD4', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>Fade <span>{Math.round((selectedData.clip.opacity ?? 1) * 100)}%</span></span>
-                <input type="range" className="pro-slider" min="0" max="1" step="0.05" value={selectedData.clip.opacity ?? 1} onChange={(e) => handleOpacityChange(parseFloat(e.target.value))} />
-              </div>
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px' }}>
+                  <span style={{ fontSize: '10px', color: '#00BCD4', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>Fade <span>{Math.round((selectedData.clip.opacity ?? 1) * 100)}%</span></span>
+                  <input type="range" className="pro-slider" min="0" max="1" step="0.05" value={selectedData.clip.opacity ?? 1} onChange={(e) => handleOpacityChange(parseFloat(e.target.value))} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px', paddingLeft: '10px', borderLeft: '1px solid #333' }}>
+                  <span style={{ fontSize: '10px', color: '#FF9800', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>Scale <span>{Math.round((selectedData.clip.zoom || 1) * 100)}%</span></span>
+                  <input type="range" className="pro-slider" min="0.05" max="5" step="0.05" value={selectedData.clip.zoom || 1} onChange={(e) => {
+                    const val = parseFloat(e.target.value); setLiveTransform(prev => ({ ...prev, zoom: val })); saveTransform(selectedData.clip.id, selectedData.trackId, { zoom: val, originX: selectedData.clip.originX || 50, originY: selectedData.clip.originY || 50 });
+                  }} />
+                </div>
+              </>
             )}
             <button onClick={() => setProject(prev => { const newTracks = prev.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== selectedData.clip.id) })); return { ...prev, tracks: newTracks, selectedClipId: null }; })} style={{ ...toolIconBtn, color: '#f44336', marginLeft: 'auto' }}><Icons.Delete /> <span style={{...toolLabel, color: '#f44336'}}>Delete</span></button>
           </>
