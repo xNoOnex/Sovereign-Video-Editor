@@ -14,13 +14,18 @@ const Icons = {
   Done: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>,
   Text: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>,
   Mic: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>,
-  Stop: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+  Stop: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>,
+  Save: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>,
+  Load: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6zm-4 10c0-1.66-1.34-3-3-3s-3 1.34-3 3 1.34 3 3 3 3-1.34 3-3zm-6-2.5V21h10v-4.5l-5-5-5 5zM5 19v-2h4v2H5zm0-4v-2h8v2H5zm0-4V9h14v2H5z"/></svg>,
+  GreenScreen: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>,
+  Wand: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
 };
 
 export default function Editor() {
   const mainMediaRef = useRef(null);
   const pipMediaRef = useRef(null);
   const audioMediaRef = useRef(null);
+  const loadProjectRef = useRef(null);
   const containerRef = useRef(null);
 
   const [project, setProject] = useState({
@@ -31,7 +36,6 @@ export default function Editor() {
   const [currentTime, setCurrentTime] = useState(0);
   const timeRef = useRef(0); 
   const [isPlaying, setIsPlaying] = useState(false);
-  
   const [liveTransform, setLiveTransform] = useState({ posX: 50, posY: 50, panX: 0, panY: 0, zoom: 1, originX: 50, originY: 50, opacity: 1 });
   
   const [isRecording, setIsRecording] = useState(false);
@@ -90,42 +94,73 @@ export default function Editor() {
     document.querySelectorAll('.compositor-media').forEach(media => { if (media.readyState >= 1) media.currentTime = 0.001; });
   };
 
+  const handleSaveProject = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(project));
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", "sovereign_project.json");
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+
+  const handleLoadProject = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try { setProject(JSON.parse(event.target.result)); } 
+      catch (e) { alert("Invalid Sovereign project file."); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleAutoCaptions = () => {
+    const audioTrack = project.tracks.find(t => t.type === 'audio');
+    if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first to map captions."); return; }
+    const targetAudio = audioTrack.clips[0];
+    
+    setProject(prev => {
+      const newTracks = [...prev.tracks];
+      const newClips = [];
+      for(let i=0; i < targetAudio.duration; i+=2) {
+         newClips.push({
+           id: 'c-' + Math.random().toString(36).substr(2, 9), name: `Caption ${i}`, type: 'text', text: `Caption [${i}s]`,
+           timelineStartTime: targetAudio.timelineStartTime + i, duration: 2, color: '#E91E63', url: null, 
+           zoom: 1.5, panX: 0, panY: 0, posX: 50, posY: 90, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
+         });
+      }
+      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
+      newTracks.splice(newTracks.findIndex(t => t.type === 'audio'), 0, { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Captions`, muted: false, clips: newClips });
+      return { ...prev, tracks: newTracks, selectedClipId: newClips[0].id };
+    });
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      recordStartTime.current = currentTime;
-
+      mediaRecorderRef.current = mediaRecorder; audioChunksRef.current = []; recordStartTime.current = currentTime;
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         insertMediaDirectly('audio', URL.createObjectURL(audioBlob), `Voiceover_${Math.floor(recordStartTime.current)}s`, timeRef.current - recordStartTime.current, '#E91E63', recordStartTime.current);
         stream.getTracks().forEach(track => track.stop()); 
       };
-
       mediaRecorder.start(); setIsRecording(true); setIsPlaying(true); 
     } catch (err) { alert("Microphone permission denied."); }
   };
-
-  const stopRecording = () => {
-    setIsRecording(false); setIsPlaying(false);
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
-  };
+  const stopRecording = () => { setIsRecording(false); setIsPlaying(false); if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop(); };
 
   const insertMediaDirectly = (targetType, fileUrl, fileName, duration, defaultColor, forceStartTime = null) => {
     const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
     const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
-
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClip = { 
         id: newClipId, name: fileName, type: targetType === 'overlay' ? 'image' : targetType, 
-        timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, 
+        timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, audioDucking: false,
         zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
       };
-
       if (targetType === 'audio') {
         const audioTrack = newTracks.find(t => t.type === 'audio');
         if (audioTrack) audioTrack.clips.push(newClip);
@@ -134,13 +169,8 @@ export default function Editor() {
         const count = newTracks.filter(t => t.type === targetType).length + 1;
         const newTrack = { id: `t-${targetType}-${count}`, type: targetType, name: `${prefix}${count}`, muted: false, clips: [newClip] };
         let insertIndex = newTracks.length;
-        if (targetType === 'main_video') {
-          const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio');
-          if (idx !== -1) insertIndex = idx;
-        } else if (targetType === 'overlay') {
-          const idx = newTracks.findIndex(t => t.type === 'audio');
-          if (idx !== -1) insertIndex = idx;
-        }
+        if (targetType === 'main_video') { const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio'); if (idx !== -1) insertIndex = idx; } 
+        else if (targetType === 'overlay') { const idx = newTracks.findIndex(t => t.type === 'audio'); if (idx !== -1) insertIndex = idx; }
         newTracks.splice(insertIndex, 0, newTrack);
       }
       return { ...prev, duration: Math.max(prev.duration, spawnTime + duration + 5), tracks: newTracks, selectedClipId: newClipId };
@@ -176,7 +206,7 @@ export default function Editor() {
   };
 
   const compileFFmpegScript = () => {
-    let script = "# Sovereign FFmpeg Export Script\n# Run this in Termux or via ffmpeg.wasm\n\nffmpeg \\\n";
+    let script = "# Sovereign FFmpeg Export Script\n# Pro Math Engine (Chroma, Ducking, Steganography)\n\nffmpeg \\\n";
     let inputCount = 0;
     project.tracks.forEach(track => {
       track.clips.forEach(clip => {
@@ -185,29 +215,39 @@ export default function Editor() {
     });
 
     if (embedPayload && steganographyFileRef.current?.files[0]) {
-       script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n`;
-       script += `  -metadata:s:t mimetype=application/octet-stream \\\n`;
+       script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`;
     }
 
     script += `  -filter_complex "\\\n    [0:v]scale=1920:1080[bg]; \\\n`;
     let overlayIndex = 1;
+    
+    // Chroma Key & Overlay Matrix
     project.tracks.filter(t => t.type === 'overlay').forEach(track => {
       track.clips.forEach(clip => {
-        script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
+        if (clip.chromaKey) {
+          script += `    [${overlayIndex}:v]colorkey=0x00FF00:0.3:0.2[ck${overlayIndex}]; \\\n`;
+          script += `    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
+        } else {
+          script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
+        }
         overlayIndex++;
       });
     });
     
-    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" -map 0:a? \\\n  output_sovereign.mkv`;
-    setFfmpegScript(script);
-    setShowExportModal(true);
+    // Audio Ducking Matrix
+    const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
+    if (duckingAudio) {
+      script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`;
+    }
+
+    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mkv`;
+    setFfmpegScript(script); setShowExportModal(true);
   };
 
   const handleSplitClip = () => {
     if (!selectedData) return;
     const { clip, trackId } = selectedData;
     const localTime = currentTime - clip.timelineStartTime;
-
     if (localTime > 0.2 && localTime < clip.duration - 0.2) {
       setProject(prev => {
         const newTracks = prev.tracks.map(t => {
@@ -216,8 +256,7 @@ export default function Editor() {
           const oldClip = t.clips[cIndex];
           const clipA = { ...oldClip, duration: localTime };
           const clipB = { ...oldClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime, duration: oldClip.duration - localTime };
-          const newClips = [...t.clips];
-          newClips.splice(cIndex, 1, clipA, clipB);
+          const newClips = [...t.clips]; newClips.splice(cIndex, 1, clipA, clipB);
           return { ...t, clips: newClips };
         });
         return { ...prev, tracks: newTracks, selectedClipId: null };
@@ -226,6 +265,17 @@ export default function Editor() {
   };
 
   const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
+  
+  const updateSelectedClip = (key, value) => {
+    if (!selectedData) return;
+    setProject(prev => {
+      const newTracks = prev.tracks.map(t => {
+        if (t.id !== selectedData.trackId) return t;
+        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
+      });
+      return { ...prev, tracks: newTracks };
+    });
+  };
 
   const saveTransform = (clipId, trackId, updates) => {
     setProject(prev => {
@@ -234,9 +284,7 @@ export default function Editor() {
         return { ...t, clips: t.clips.map(c => {
             if (c.id !== clipId) return c;
             const updatedClip = { ...c, ...updates };
-            if (isPlaying) {
-              updatedClip.transformKeyframes = [...(c.transformKeyframes || []), { time: timeRef.current, zoom: updatedClip.zoom, x: t.type === 'overlay' ? updatedClip.posX : updatedClip.panX, y: t.type === 'overlay' ? updatedClip.posY : updatedClip.panY, originX: updatedClip.originX, originY: updatedClip.originY, opacity: updatedClip.opacity }];
-            }
+            if (isPlaying) { updatedClip.transformKeyframes = [...(c.transformKeyframes || []), { time: timeRef.current, zoom: updatedClip.zoom, x: t.type === 'overlay' ? updatedClip.posX : updatedClip.panX, y: t.type === 'overlay' ? updatedClip.posY : updatedClip.panY, originX: updatedClip.originX, originY: updatedClip.originY, opacity: updatedClip.opacity }]; }
             return updatedClip;
           })
         };
@@ -245,12 +293,7 @@ export default function Editor() {
     });
   };
 
-  const handleOpacityChange = (newOpacity) => {
-    if (!selectedData) return;
-    setLiveTransform(prev => ({ ...prev, opacity: newOpacity }));
-    saveTransform(selectedData.clip.id, selectedData.trackId, { opacity: newOpacity });
-  };
-
+  const handleOpacityChange = (newOpacity) => { if (!selectedData) return; setLiveTransform(prev => ({ ...prev, opacity: newOpacity })); saveTransform(selectedData.clip.id, selectedData.trackId, { opacity: newOpacity }); };
   const getPinchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
   const getPinchCenter = (touches, rect) => ({ x: (((touches[0].clientX + touches[1].clientX) / 2 - rect.left) / rect.width) * 100, y: (((touches[0].clientY + touches[1].clientY) / 2 - rect.top) / rect.height) * 100 });
 
@@ -268,83 +311,52 @@ export default function Editor() {
   };
 
   const handleOverlayTouchStart = (e, clipId, trackId, clipData) => {
-    e.stopPropagation();
-    setProject(prev => ({ ...prev, selectedClipId: clipId }));
+    e.stopPropagation(); setProject(prev => ({ ...prev, selectedClipId: clipId }));
     setLiveTransform({ posX: clipData.posX || 50, posY: clipData.posY || 50, panX: clipData.panX || 0, panY: clipData.panY || 0, zoom: clipData.zoom || 1, originX: clipData.originX || 50, originY: clipData.originY || 50, opacity: clipData.opacity ?? 1 });
-    
     if (e.touches.length >= 2) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const center = getPinchCenter(e.touches, rect);
+      const rect = containerRef.current.getBoundingClientRect(); const center = getPinchCenter(e.touches, rect);
       pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: clipData.zoom || 1, originX: center.x, originY: center.y, clipId, trackId };
     } else {
       const rect = e.currentTarget.getBoundingClientRect();
       dragOffset.current = { x: e.touches[0].clientX - (rect.left + rect.width / 2), y: e.touches[0].clientY - (rect.top + rect.height / 2) };
-      activeDragClip.current = { clipId, trackId };
-      isDraggingOverlay.current = true;
+      activeDragClip.current = { clipId, trackId }; isDraggingOverlay.current = true;
     }
   };
 
   const handleViewportTouchMove = (e) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    
     if (pinchRef.current.active && e.touches.length === 2) {
-      const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
-      const newZoom = Math.max(0.05, Math.min(15.0, pinchRef.current.startZoom * scaleMultiplier));
-      setLiveTransform(prev => ({ ...prev, zoom: newZoom })); 
-      saveTransform(pinchRef.current.clipId, pinchRef.current.trackId, { zoom: newZoom, originX: pinchRef.current.originX, originY: pinchRef.current.originY });
-    } 
-    else if (panRef.current.active && e.touches.length === 1) {
-      const newPanX = panRef.current.startPanX + (e.touches[0].clientX - panRef.current.startX);
-      const newPanY = panRef.current.startPanY + (e.touches[0].clientY - panRef.current.startY);
-      setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY }));
-      saveTransform(panRef.current.clipId, panRef.current.trackId, { panX: newPanX, panY: newPanY });
-    }
-    else if (isDraggingOverlay.current && activeDragClip.current && e.touches.length === 1) {
-      const targetX = e.touches[0].clientX - dragOffset.current.x;
-      const targetY = e.touches[0].clientY - dragOffset.current.y;
-      const newX = Math.max(0, Math.min(100, ((targetX - rect.left) / rect.width) * 100));
-      const newY = Math.max(0, Math.min(100, ((targetY - rect.top) / rect.height) * 100));
-      setLiveTransform(prev => ({ ...prev, posX: newX, posY: newY }));
-      saveTransform(activeDragClip.current.clipId, activeDragClip.current.trackId, { posX: newX, posY: newY });
+      const newZoom = Math.max(0.05, Math.min(15.0, pinchRef.current.startZoom * (getPinchDistance(e.touches) / pinchRef.current.startDist)));
+      setLiveTransform(prev => ({ ...prev, zoom: newZoom })); saveTransform(pinchRef.current.clipId, pinchRef.current.trackId, { zoom: newZoom, originX: pinchRef.current.originX, originY: pinchRef.current.originY });
+    } else if (panRef.current.active && e.touches.length === 1) {
+      const newPanX = panRef.current.startPanX + (e.touches[0].clientX - panRef.current.startX); const newPanY = panRef.current.startPanY + (e.touches[0].clientY - panRef.current.startY);
+      setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY })); saveTransform(panRef.current.clipId, panRef.current.trackId, { panX: newPanX, panY: newPanY });
+    } else if (isDraggingOverlay.current && activeDragClip.current && e.touches.length === 1) {
+      const newX = Math.max(0, Math.min(100, (((e.touches[0].clientX - dragOffset.current.x) - rect.left) / rect.width) * 100));
+      const newY = Math.max(0, Math.min(100, (((e.touches[0].clientY - dragOffset.current.y) - rect.top) / rect.height) * 100));
+      setLiveTransform(prev => ({ ...prev, posX: newX, posY: newY })); saveTransform(activeDragClip.current.clipId, activeDragClip.current.trackId, { posX: newX, posY: newY });
     }
   };
 
   const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; };
-
-  const startInteraction = (e, type, payload) => {
-    e.stopPropagation();
-    interaction.current = { type, startX: e.touches[0].clientX, ...payload };
-    if (type === 'trim' || type === 'move') {
-      setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
-      setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 });
-    }
-  };
-
+  const startInteraction = (e, type, payload) => { e.stopPropagation(); interaction.current = { type, startX: e.touches[0].clientX, ...payload }; if (type === 'trim' || type === 'move') { setProject(prev => ({ ...prev, selectedClipId: payload.clipId })); setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 }); } };
+  
   const handleTimelineTouchMove = (e) => {
     const { type, edge, startX, initialStart, initialDuration, trackId, clipId } = interaction.current;
     if (!type) return;
     const deltaSeconds = (e.touches[0].clientX - startX) / project.zoomLevel;
-
-    if (type === 'scrub') {
-      setCurrentTime(Math.max(0, initialStart + deltaSeconds));
-      timeRef.current = Math.max(0, initialStart + deltaSeconds);
-      return;
-    }
-
+    if (type === 'scrub') { setCurrentTime(Math.max(0, initialStart + deltaSeconds)); timeRef.current = Math.max(0, initialStart + deltaSeconds); return; }
     setProject(prev => {
       const newTracks = prev.tracks.map(track => {
         if (track.id !== trackId) return track;
-        return {
-          ...track, clips: track.clips.map(c => {
+        return { ...track, clips: track.clips.map(c => {
             if (c.id !== clipId) return c;
             let newStart = c.timelineStartTime; let newDuration = c.duration;
             if (type === 'move') newStart = Math.max(0, initialStart + deltaSeconds);
             else if (type === 'trim') {
-              if (edge === 'left') {
-                newStart = Math.max(0, initialStart + deltaSeconds);
-                newDuration = Math.max(0.5, initialDuration - (newStart - initialStart));
-              } else if (edge === 'right') newDuration = Math.max(0.5, initialDuration + deltaSeconds);
+              if (edge === 'left') { newStart = Math.max(0, initialStart + deltaSeconds); newDuration = Math.max(0.5, initialDuration - (newStart - initialStart)); } 
+              else if (edge === 'right') newDuration = Math.max(0.5, initialDuration + deltaSeconds);
             }
             return { ...c, timelineStartTime: newStart, duration: newDuration };
           })
@@ -355,14 +367,9 @@ export default function Editor() {
   };
   const handleTimelineTouchEnd = () => { interaction.current.type = null; };
 
-  const mainTracks = project.tracks.filter(t => t.type === 'main_video');
-  const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
+  const mainTracks = project.tracks.filter(t => t.type === 'main_video'); const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
-
-  const isActivelyTouched = (clipId) => 
-    (pinchRef.current.active && pinchRef.current.clipId === clipId) || 
-    (panRef.current.active && panRef.current.clipId === clipId) || 
-    (isDraggingOverlay.current && activeDragClip.current?.clipId === clipId);
+  const isActivelyTouched = (clipId) => (pinchRef.current.active && pinchRef.current.clipId === clipId) || (panRef.current.active && panRef.current.clipId === clipId) || (isDraggingOverlay.current && activeDragClip.current?.clipId === clipId);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
@@ -371,31 +378,23 @@ export default function Editor() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <h2 style={{ margin: 0, fontSize: '18px', color: '#4CAF50' }}>Sovereign FFmpeg Compiler</h2>
-            <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>This is the raw, untethered math that will render your project entirely offline.</p>
-            
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input type="checkbox" id="steg" checked={embedPayload} onChange={(e) => setEmbedPayload(e.target.checked)} />
-              <label htmlFor="steg" style={{ fontSize: '12px', color: '#E91E63', fontWeight: 'bold' }}>Embed Ghost Payload (Steganography)</label>
+              <label htmlFor="steg" style={{ fontSize: '12px', color: '#E91E63', fontWeight: 'bold' }}>Embed Ghost Payload</label>
             </div>
             {embedPayload && <input type="file" ref={steganographyFileRef} style={{ fontSize: '12px', color: '#FFF' }} />}
-
             <textarea readOnly value={ffmpegScript} style={{ width: '100%', height: '200px', backgroundColor: '#000', color: '#00BCD4', border: '1px solid #333', borderRadius: '8px', padding: '10px', fontFamily: 'monospace', fontSize: '10px' }} />
-            
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button onClick={() => setShowExportModal(false)} style={{ backgroundColor: 'transparent', color: '#FFF', border: 'none', padding: '10px', cursor: 'pointer' }}>Close</button>
-              <button onClick={compileFFmpegScript} style={{ backgroundColor: '#4CAF50', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Generate Build</button>
+              <button onClick={compileFFmpegScript} style={{ backgroundColor: '#4CAF50', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Update Logic</button>
             </div>
           </div>
         </div>
       )}
 
-      <style>{`
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
-        .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        video { object-fit: contain; background-color: #000; }
-      `}</style>
+      <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } `}</style>
 
+      <input type="file" accept=".json" ref={loadProjectRef} onChange={handleLoadProject} style={{ display: 'none' }} />
       <input type="file" accept="*/*" ref={mainMediaRef} onChange={(e) => handleAddMedia(e, 'main_video')} style={{ display: 'none' }} />
       <input type="file" accept="*/*" ref={pipMediaRef} onChange={(e) => handleAddMedia(e, 'overlay')} style={{ display: 'none' }} />
       <input type="file" accept="audio/*" ref={audioMediaRef} onChange={(e) => handleAddMedia(e, 'audio')} style={{ display: 'none' }} />
@@ -433,9 +432,12 @@ export default function Editor() {
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; renderZoom = pastKf[pastKf.length - 1].zoom; originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity; }
             } else if (isActivelyTouched(clip.id)) { posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom; originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity; }
 
+            // Add simple local CSS filter for visual green screen mock if enabled
+            const visualFilter = clip.chromaKey ? 'hue-rotate(90deg) drop-shadow(0 0 10px #000)' : 'none';
+
             return (
               <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
-                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity }}
+                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity, filter: visualFilter }}
               >
                 {clip.type === 'text' ? <div style={{ fontSize: '80px', padding: '10px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div> : clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> : <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
               </div>
@@ -451,7 +453,11 @@ export default function Editor() {
            <button onClick={handleRewind} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Rewind /></button>
            <button onClick={togglePlayback} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{isPlaying ? <Icons.Pause /> : <Icons.Play />}</button>
          </div>
-         <button onClick={compileFFmpegScript} style={{ backgroundColor: '#FFF', color: '#000', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Export /> Export</button>
+         <div style={{ display: 'flex', gap: '8px' }}>
+           <button onClick={() => loadProjectRef.current.click()} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Load /></button>
+           <button onClick={handleSaveProject} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Save /></button>
+           <button onClick={compileFFmpegScript} style={{ backgroundColor: '#FFF', color: '#000', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Export /> Export</button>
+         </div>
       </div>
 
       <div onTouchMove={handleTimelineTouchMove} onTouchEnd={handleTimelineTouchEnd} className="hide-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', backgroundColor: '#0A0A0A', position: 'relative', paddingBottom: '90px' }}>
@@ -493,7 +499,8 @@ export default function Editor() {
             <button onClick={() => mainMediaRef.current.click()} style={toolIconBtn}><Icons.AddVideo /> <span style={toolLabel}>Primary</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
-            <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text/Emoji</span></button>
+            <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text</span></button>
+            <button onClick={handleAutoCaptions} style={{ ...toolIconBtn, color: '#9C27B0' }}><Icons.Wand /> <span style={{...toolLabel, color: '#9C27B0'}}>Captions</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             {isRecording ? (
               <button onClick={stopRecording} style={{ ...toolIconBtn, color: '#f44336' }}><Icons.Stop /> <span style={{...toolLabel, color: '#f44336', animation: 'blink 1s infinite'}}>Recording...</span></button>
@@ -507,6 +514,15 @@ export default function Editor() {
             <button onClick={() => setProject(prev => ({...prev, selectedClipId: null}))} style={{...toolIconBtn, color: '#4CAF50'}}><Icons.Done /> <span style={{...toolLabel, color: '#4CAF50'}}>Done</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
+            
+            {/* NEW: Pro Studio Tools (Green Screen & Audio Ducking) */}
+            {selectedData.track.type === 'overlay' && selectedData.clip.type !== 'text' && (
+              <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
+            )}
+            {selectedData.track.type === 'audio' && (
+              <button onClick={() => updateSelectedClip('audioDucking', !selectedData.clip.audioDucking)} style={{ ...toolIconBtn, color: selectedData.clip.audioDucking ? '#4CAF50' : '#ECECEC' }}><Icons.Mic /> <span style={{...toolLabel, color: selectedData.clip.audioDucking ? '#4CAF50' : '#AAA'}}>Ducking</span></button>
+            )}
+
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             {selectedData.track.type !== 'audio' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px' }}>
