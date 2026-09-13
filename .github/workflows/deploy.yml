@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: Deploy Sovereign Editor to GitHub Pages
 
 on:
   push:
-    branches: ['main', 'master']
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
@@ -21,29 +21,28 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup Node
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
+          
+      - name: Install Dependencies
         run: npm install
-
-      - name: Build site
+        
+      - name: Build the Sovereign Engine
         run: npm run build
-
-      - name: Configure GitHub Pages
+        
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
-
-      - name: Upload static artifact
+        
+      - name: Upload Build Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
-
-      - name: Deploy
+          
+      - name: Deploy to the Web
         id: deployment
         uses: actions/deploy-pages@v4
