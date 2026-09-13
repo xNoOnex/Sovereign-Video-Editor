@@ -22,8 +22,7 @@ export default function Editor() {
   const [project, setProject] = useState({
     duration: 30, zoomLevel: 15, selectedClipId: null,
     tracks: [
-      { id: 't-main', type: 'main_video', name: 'Primary', muted: false, clips: [] },
-      { id: 't-audio', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }
+      { id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }
     ]
   });
 
@@ -31,14 +30,13 @@ export default function Editor() {
   const timeRef = useRef(0); 
   const [isPlaying, setIsPlaying] = useState(false);
   
-  const [liveTransform, setLiveTransform] = useState({ posX: 50, posY: 50, panX: 0, panY: 0, zoom: 1, originX: 50, originY: 50 });
+  const [liveTransform, setLiveTransform] = useState({ posX: 50, posY: 50, panX: 0, panY: 0, zoom: 1, originX: 50, originY: 50, opacity: 1 });
   
-  // NEW: Offset Math Refs to prevent center-snapping
   const dragOffset = useRef({ x: 0, y: 0 });
   const isDraggingOverlay = useRef(false);
   const activeDragClip = useRef(null); 
   const pinchRef = useRef({ active: false, startDist: 0, startZoom: 1, originX: 50, originY: 50 });
-  const panRef = useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 }); 
+  const panRef = useRef({ active: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50, startPanX: 0, startPanY: 0 }); 
   const interaction = useRef({ type: null, targetId: null, trackId: null, edge: null, startX: 0, initialStart: 0, initialDuration: 0 });
 
   const getSelectedData = () => {
@@ -88,6 +86,8 @@ export default function Editor() {
     });
   };
 
+  const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
+
   const handleSplitClip = () => {
     if (!selectedData) return;
     const { clip, trackId } = selectedData;
@@ -111,6 +111,7 @@ export default function Editor() {
     }
   };
 
+  // --- MULTI-TRACK ROUTER ---
   const handleAddMedia = (e, targetType) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -123,47 +124,54 @@ export default function Editor() {
     let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
 
     setProject(prev => {
-      let spawnTime = currentTime;
-      const newTracks = prev.tracks.map(t => {
-        if (t.type === targetType && (targetType === 'main_video' || targetType === 'audio')) {
-          const adjustedClips = t.clips.map(c => {
-             if (c.timelineStartTime >= currentTime) return { ...c, timelineStartTime: c.timelineStartTime + duration };
-             return c;
-          });
-          const newClip = { 
-            id: newClipId, name: file.name, type: isAudio ? 'audio' : (isImage ? 'image' : 'video'), 
-            timelineStartTime: currentTime, duration, color, url: fileUrl, 
-            zoom: 1.0, panX: 0, panY: 0, originX: 50, originY: 50, speed: 1.0, muted: false, transformKeyframes: [] 
-          };
-          return { ...t, clips: [...adjustedClips, newClip] };
-        }
-        return t;
-      });
+      const newTracks = [...prev.tracks];
+      
+      const newClip = { 
+        id: newClipId, name: file.name, type: isAudio ? 'audio' : (isImage ? 'image' : 'video'), 
+        timelineStartTime: currentTime, duration, color, url: fileUrl, 
+        zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, // Opacity Engine added
+        speed: 1.0, muted: false, transformKeyframes: [] 
+      };
 
-      if (targetType === 'overlay') {
-        const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
-        const newClip = { id: newClipId, name: file.name, type: isImage ? 'image' : 'video', timelineStartTime: currentTime, duration, color, url: fileUrl, zoom: 1.0, posX: 50, posY: 50, originX: 50, originY: 50, speed: 1.0, muted: false, transformKeyframes: [] };
-        const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Layer ${overlayCount}`, muted: false, clips: [newClip] };
-        const audioIndex = newTracks.findIndex(t => t.type === 'audio');
-        newTracks.splice(audioIndex, 0, newTrack);
+      if (targetType === 'audio') {
+        const audioTrack = newTracks.find(t => t.type === 'audio');
+        if (audioTrack) audioTrack.clips.push(newClip);
+      } else {
+        // MULTI-TRACK LOGIC: Spawn a distinct V or Overlay track for every visual asset added
+        const prefix = targetType === 'main_video' ? 'V' : 'Layer ';
+        const count = newTracks.filter(t => t.type === targetType).length + 1;
+        const newTrack = { id: `t-${targetType}-${count}`, type: targetType, name: `${prefix}${count}`, muted: false, clips: [newClip] };
+        
+        let insertIndex = newTracks.length;
+        if (targetType === 'main_video') {
+          const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio');
+          if (idx !== -1) insertIndex = idx;
+        } else if (targetType === 'overlay') {
+          const idx = newTracks.findIndex(t => t.type === 'audio');
+          if (idx !== -1) insertIndex = idx;
+        }
+        newTracks.splice(insertIndex, 0, newTrack);
       }
+      
       return { ...prev, duration: Math.max(prev.duration, currentTime + duration + 5), tracks: newTracks, selectedClipId: newClipId };
     });
     e.target.value = ''; 
   };
 
-  const saveTransform = (newZoom, newX, newY, originX, originY) => {
+  const saveTransform = (newZoom, newX, newY, originX, originY, newOpacity) => {
     if (!selectedData) return;
     setProject(prev => {
       const newTracks = prev.tracks.map(t => {
         if (t.id !== selectedData.trackId) return t;
         return { ...t, clips: t.clips.map(c => {
             if (c.id !== selectedData.clip.id) return c;
-            const updatedClip = { ...c, zoom: newZoom, originX, originY };
+            const updatedClip = { ...c, zoom: newZoom, originX, originY, opacity: newOpacity };
+            
             if (t.type === 'overlay') { updatedClip.posX = newX; updatedClip.posY = newY; } 
             else { updatedClip.panX = newX; updatedClip.panY = newY; }
+
             if (isPlaying) {
-              updatedClip.transformKeyframes = [...(c.transformKeyframes || []), { time: timeRef.current, zoom: newZoom, x: newX, y: newY, originX, originY }];
+              updatedClip.transformKeyframes = [...(c.transformKeyframes || []), { time: timeRef.current, zoom: newZoom, x: newX, y: newY, originX, originY, opacity: newOpacity }];
             }
             return updatedClip;
           })
@@ -171,6 +179,14 @@ export default function Editor() {
       });
       return { ...prev, tracks: newTracks };
     });
+  };
+
+  const handleOpacityChange = (newOpacity) => {
+    if (!selectedData) return;
+    setLiveTransform(prev => ({ ...prev, opacity: newOpacity }));
+    const c = selectedData.clip;
+    const isOverlay = selectedData.track.type === 'overlay';
+    saveTransform(c.zoom || 1, isOverlay ? c.posX : c.panX, isOverlay ? c.posY : c.panY, c.originX, c.originY, newOpacity);
   };
 
   const getPinchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
@@ -183,13 +199,13 @@ export default function Editor() {
     if (!selectedData || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
 
-    if (e.touches.length === 2 && selectedData.trackId === 't-main') {
+    if (e.touches.length === 2 && selectedData.track.type === 'main_video') {
       e.preventDefault(); 
       const center = getPinchCenter(e.touches, rect);
       pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: selectedData.clip.zoom || 1, originX: center.x, originY: center.y };
       setLiveTransform(prev => ({ ...prev, originX: center.x, originY: center.y }));
     } 
-    else if (e.touches.length === 1 && selectedData.trackId === 't-main') {
+    else if (e.touches.length === 1 && selectedData.track.type === 'main_video') {
       e.preventDefault();
       panRef.current = { 
         active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, 
@@ -200,17 +216,10 @@ export default function Editor() {
 
   const handleOverlayTouchStart = (e, clipId, trackId) => {
     e.stopPropagation();
-    
-    // NEW: Offset Math. Instead of snapping to center, we record exactly where on the clip you touched.
     const rect = e.target.getBoundingClientRect();
     const centerX = rect.left + (rect.width / 2);
     const centerY = rect.top + (rect.height / 2);
-    
-    dragOffset.current = {
-      x: e.touches[0].clientX - centerX,
-      y: e.touches[0].clientY - centerY
-    };
-
+    dragOffset.current = { x: e.touches[0].clientX - centerX, y: e.touches[0].clientY - centerY };
     activeDragClip.current = { clipId, trackId };
     isDraggingOverlay.current = true;
     setProject(prev => ({ ...prev, selectedClipId: clipId }));
@@ -219,33 +228,30 @@ export default function Editor() {
   const handleViewportTouchMove = (e) => {
     if (!containerRef.current || !selectedData) return;
     const rect = containerRef.current.getBoundingClientRect();
+    const currentOpacity = selectedData.clip.opacity ?? 1;
     
     if (pinchRef.current.active && e.touches.length === 2) {
       const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
       const newZoom = Math.max(0.2, Math.min(5.0, pinchRef.current.startZoom * scaleMultiplier));
       setLiveTransform(prev => ({ ...prev, zoom: newZoom })); 
       const isOverlay = selectedData.track.type === 'overlay';
-      saveTransform(newZoom, isOverlay ? (selectedData.clip.posX || 50) : (selectedData.clip.panX || 0), isOverlay ? (selectedData.clip.posY || 50) : (selectedData.clip.panY || 0), pinchRef.current.originX, pinchRef.current.originY);
+      saveTransform(newZoom, isOverlay ? (selectedData.clip.posX || 50) : (selectedData.clip.panX || 0), isOverlay ? (selectedData.clip.posY || 50) : (selectedData.clip.panY || 0), pinchRef.current.originX, pinchRef.current.originY, currentOpacity);
     } 
-    else if (panRef.current.active && e.touches.length === 1 && selectedData.trackId === 't-main') {
+    else if (panRef.current.active && e.touches.length === 1 && selectedData.track.type === 'main_video') {
       const deltaX = e.touches[0].clientX - panRef.current.startX;
       const deltaY = e.touches[0].clientY - panRef.current.startY;
       const newPanX = panRef.current.startPanX + deltaX;
       const newPanY = panRef.current.startPanY + deltaY;
       setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY }));
-      saveTransform(selectedData.clip.zoom || 1, newPanX, newPanY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
+      saveTransform(selectedData.clip.zoom || 1, newPanX, newPanY, selectedData.clip.originX || 50, selectedData.clip.originY || 50, currentOpacity);
     }
-    // NEW: Butter-Smooth Offset Dragging for Overlays
     else if (isDraggingOverlay.current && activeDragClip.current && e.touches.length === 1) {
-      // Subtract the initial offset so the center of the video doesn't teleport to your finger
       const targetX = e.touches[0].clientX - dragOffset.current.x;
       const targetY = e.touches[0].clientY - dragOffset.current.y;
-      
       const newX = Math.max(0, Math.min(100, ((targetX - rect.left) / rect.width) * 100));
       const newY = Math.max(0, Math.min(100, ((targetY - rect.top) / rect.height) * 100));
-      
       setLiveTransform(prev => ({ ...prev, posX: newX, posY: newY }));
-      saveTransform(selectedData.clip.zoom || 1, newX, newY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
+      saveTransform(selectedData.clip.zoom || 1, newX, newY, selectedData.clip.originX || 50, selectedData.clip.originY || 50, currentOpacity);
     }
   };
 
@@ -263,9 +269,8 @@ export default function Editor() {
     const deltaSeconds = (e.touches[0].clientX - startX) / project.zoomLevel;
 
     if (type === 'scrub') {
-      const newTime = Math.max(0, initialStart + deltaSeconds);
-      setCurrentTime(newTime);
-      timeRef.current = newTime;
+      setCurrentTime(Math.max(0, initialStart + deltaSeconds));
+      timeRef.current = Math.max(0, initialStart + deltaSeconds);
       return;
     }
 
@@ -292,7 +297,7 @@ export default function Editor() {
   };
   const handleTimelineTouchEnd = () => { interaction.current.type = null; };
 
-  const activeMainClips = project.tracks.find(t => t.type === 'main_video')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
+  const mainTracks = project.tracks.filter(t => t.type === 'main_video');
   const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
 
@@ -303,7 +308,6 @@ export default function Editor() {
         .hide-scroll::-webkit-scrollbar { display: none; }
         .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
         .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        /* NEW: Force video posters to load their first frame to prevent black boxes */
         video { object-fit: contain; background-color: #000; }
       `}</style>
 
@@ -321,40 +325,45 @@ export default function Editor() {
         style={{ flex: '0 0 38%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
       >
         
-        {/* Layer 0: Main Reel */}
-        {activeMainClips.map(clip => {
-          let renderZoom = clip.zoom || 1.0; let renderPanX = clip.panX || 0; let renderPanY = clip.panY || 0; 
-          let originX = clip.originX || 50; let originY = clip.originY || 50;
+        {/* Layer Stack: Infinite Primary Videos */}
+        {mainTracks.map((track, trackIndex) => {
+          const activeClips = track.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
+          return activeClips.map(clip => {
+            let renderZoom = clip.zoom || 1.0; let renderPanX = clip.panX || 0; let renderPanY = clip.panY || 0; 
+            let originX = clip.originX || 50; let originY = clip.originY || 50; let renderOpacity = clip.opacity ?? 1.0;
 
-          if (clip.transformKeyframes?.length > 0 && (!isPlaying || project.selectedClipId !== clip.id)) {
-            const pastKf = clip.transformKeyframes.filter(kf => kf.time <= currentTime);
-            if (pastKf.length > 0) {
-               renderZoom = pastKf[pastKf.length - 1].zoom; renderPanX = pastKf[pastKf.length - 1].x; renderPanY = pastKf[pastKf.length - 1].y;
-               originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50;
+            if (clip.transformKeyframes?.length > 0 && (!isPlaying || project.selectedClipId !== clip.id)) {
+              const pastKf = clip.transformKeyframes.filter(kf => kf.time <= currentTime);
+              if (pastKf.length > 0) {
+                 renderZoom = pastKf[pastKf.length - 1].zoom; renderPanX = pastKf[pastKf.length - 1].x; renderPanY = pastKf[pastKf.length - 1].y;
+                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50;
+                 renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity;
+              }
+            } else if ((pinchRef.current.active || panRef.current.active || project.selectedClipId === clip.id)) {
+               renderZoom = liveTransform.zoom || renderZoom; renderPanX = liveTransform.panX || renderPanX; renderPanY = liveTransform.panY || renderPanY;
+               originX = liveTransform.originX || originX; originY = liveTransform.originY || originY;
+               if (project.selectedClipId === clip.id) renderOpacity = liveTransform.opacity ?? renderOpacity;
             }
-          } else if ((pinchRef.current.active || panRef.current.active) && project.selectedClipId === clip.id) {
-             renderZoom = liveTransform.zoom || renderZoom; renderPanX = liveTransform.panX || renderPanX; renderPanY = liveTransform.panY || renderPanY;
-             originX = liveTransform.originX || originX; originY = liveTransform.originY || originY;
-          }
 
-          return (
-            <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); }} 
-                 style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1, 
-                          transformOrigin: `${originX}% ${originY}%`, 
-                          transform: `translate(${renderPanX}px, ${renderPanY}px) scale(${renderZoom})`, 
-                          opacity: project.tracks.find(t=>t.type==='main_video').muted ? 0.5 : 1 }}>
-              {clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} alt="main" /> : 
-              <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} playsInline muted={clip.muted || project.tracks.find(t=>t.type==='main_video').muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
-            </div>
-          );
+            return (
+              <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }} 
+                   style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1 + trackIndex, 
+                            transformOrigin: `${originX}% ${originY}%`, 
+                            transform: `translate(${renderPanX}px, ${renderPanY}px) scale(${renderZoom})`, 
+                            opacity: track.muted ? 0 : renderOpacity }}>
+                {clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} alt="main" /> : 
+                <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
+              </div>
+            );
+          });
         })}
 
-        {/* Layer Stack: Infinite Draggable Overlays */}
+        {/* Layer Stack: Infinite Overlays */}
         {overlayTracks.map((track, trackIndex) => {
           const activeClips = track.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration);
           return activeClips.map(clip => {
             let posX = clip.posX ?? 50; let posY = clip.posY ?? 50; let renderZoom = clip.zoom || 1.0;
-            let originX = clip.originX || 50; let originY = clip.originY || 50;
+            let originX = clip.originX || 50; let originY = clip.originY || 50; let renderOpacity = clip.opacity ?? 1.0;
 
             if (clip.transformKeyframes?.length > 0 && (!isDraggingOverlay.current || project.selectedClipId !== clip.id)) {
               const pastKf = clip.transformKeyframes.filter(kf => kf.time <= currentTime);
@@ -362,24 +371,27 @@ export default function Editor() {
                 posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; 
                 renderZoom = pastKf[pastKf.length - 1].zoom; 
                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; 
+                renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity;
               }
-            } else if ((isDraggingOverlay.current || pinchRef.current.active) && project.selectedClipId === clip.id) {
+            } else if ((isDraggingOverlay.current || pinchRef.current.active || project.selectedClipId === clip.id)) {
               posX = liveTransform.posX || posX; posY = liveTransform.posY || posY; renderZoom = liveTransform.zoom || renderZoom;
               originX = liveTransform.originX || originX; originY = liveTransform.originY || originY;
+              if (project.selectedClipId === clip.id) renderOpacity = liveTransform.opacity ?? renderOpacity;
             }
 
             return (
               <div 
                 key={clip.id} 
                 onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id)}
-                onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); }}
+                onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }}
                 style={{ 
                   position: 'absolute', top: `${posY}%`, left: `${posX}%`, 
                   transformOrigin: `${originX}% ${originY}%`, 
                   transform: `translate(-50%, -50%) scale(${renderZoom})`, 
-                  width: '35%', height: '35%', zIndex: 10 + trackIndex, 
+                  width: '35%', height: '35%', zIndex: 50 + trackIndex, 
                   border: project.selectedClipId === clip.id ? '2px solid #FFF' : '1px dashed rgba(255,255,255,0.4)', 
-                  borderRadius: '8px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer' 
+                  borderRadius: '8px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer',
+                  opacity: track.muted ? 0 : renderOpacity
                 }}
               >
                 {clip.type === 'image' ? (
@@ -430,7 +442,7 @@ export default function Editor() {
                 {track.clips.map(clip => (
                   <div 
                     key={clip.id} 
-                    onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); }}
+                    onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform(prev => ({...prev, opacity: clip.opacity ?? 1})); }}
                     onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime })}
                     style={{
                       position: 'absolute', left: `${clip.timelineStartTime * project.zoomLevel}px`, width: `${clip.duration * project.zoomLevel}px`,
@@ -472,12 +484,10 @@ export default function Editor() {
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
 
-            <button onClick={() => updateSelectedClip('muted', !selectedData.clip.muted)} style={toolIconBtn}>{selectedData.clip.muted ? <Icons.Mute /> : <Icons.Unmute />} <span style={toolLabel}>{selectedData.clip.muted ? 'Unmute' : 'Mute'}</span></button>
-            
-            {selectedData.trackId === 't-main' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', marginLeft: '10px' }}>
-                <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', justifyContent: 'space-between' }}>Speed <span>{selectedData.clip.speed.toFixed(1)}x</span></span>
-                <input type="range" className="pro-slider" min="0.25" max="2" step="0.25" value={selectedData.clip.speed} onChange={(e) => updateSelectedClip('speed', parseFloat(e.target.value))} />
+            {selectedData.track.type !== 'audio' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px', marginLeft: '10px' }}>
+                <span style={{ fontSize: '10px', color: '#00BCD4', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>Fade <span>{Math.round((selectedData.clip.opacity ?? 1) * 100)}%</span></span>
+                <input type="range" className="pro-slider" min="0" max="1" step="0.05" value={selectedData.clip.opacity ?? 1} onChange={(e) => handleOpacityChange(parseFloat(e.target.value))} />
               </div>
             )}
             
