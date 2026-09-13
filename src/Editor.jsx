@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-// --- PRO ICONS ---
 const Icons = {
   Play: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
   Pause: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>,
@@ -34,8 +33,12 @@ export default function Editor() {
   
   const [liveTransform, setLiveTransform] = useState({ posX: 50, posY: 50, panX: 0, panY: 0, zoom: 1, originX: 50, originY: 50 });
   
+  // NEW: Offset Math Refs to prevent center-snapping
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const isDraggingOverlay = useRef(false);
+  const activeDragClip = useRef(null); 
   const pinchRef = useRef({ active: false, startDist: 0, startZoom: 1, originX: 50, originY: 50 });
-  const panRef = useRef({ active: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50, startPanX: 0, startPanY: 0 }); 
+  const panRef = useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 }); 
   const interaction = useRef({ type: null, targetId: null, trackId: null, edge: null, startX: 0, initialStart: 0, initialDuration: 0 });
 
   const getSelectedData = () => {
@@ -49,7 +52,6 @@ export default function Editor() {
 
   const selectedData = getSelectedData();
 
-  // --- CORE ENGINE ---
   useEffect(() => {
     let interval;
     if (isPlaying) {
@@ -68,8 +70,6 @@ export default function Editor() {
   useEffect(() => {
     const mediaElements = document.querySelectorAll('.compositor-media');
     mediaElements.forEach(media => {
-      // NOTE: This is a simplified engine. A true NLE requires source offsets (seeking to the exact frame).
-      // We are enforcing play/pause sync here to prevent runaway media.
       if (isPlaying && media.paused) media.play().catch(() => {});
       if (!isPlaying && !media.paused) media.pause();
     });
@@ -88,34 +88,22 @@ export default function Editor() {
     });
   };
 
-  const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
-
-  // --- NEW: THE BLADE TOOL (Splitting) ---
   const handleSplitClip = () => {
     if (!selectedData) return;
     const { clip, trackId } = selectedData;
     const localTime = currentTime - clip.timelineStartTime;
 
-    // Ensure the playhead is actually somewhere in the middle of the selected clip
     if (localTime > 0.2 && localTime < clip.duration - 0.2) {
       setProject(prev => {
         const newTracks = prev.tracks.map(t => {
           if (t.id !== trackId) return t;
-          
           const cIndex = t.clips.findIndex(c => c.id === clip.id);
           const oldClip = t.clips[cIndex];
-          
-          // Slice the original clip's duration
           const clipA = { ...oldClip, duration: localTime };
-          
-          // Generate the new second half of the clip
           const clipBId = 'c-' + Math.random().toString(36).substr(2, 9);
-          // TODO: To make this visually perfect, we must add an internal 'sourceStartTime' offset so clipB doesn't restart playback at 0s.
           const clipB = { ...oldClip, id: clipBId, timelineStartTime: currentTime, duration: oldClip.duration - localTime };
-
           const newClips = [...t.clips];
-          newClips.splice(cIndex, 1, clipA, clipB); // Replace old with A and B
-          
+          newClips.splice(cIndex, 1, clipA, clipB);
           return { ...t, clips: newClips };
         });
         return { ...prev, tracks: newTracks, selectedClipId: null };
@@ -123,7 +111,6 @@ export default function Editor() {
     }
   };
 
-  // --- ASSET ROUTER (With Ripple Edit Logic) ---
   const handleAddMedia = (e, targetType) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -133,28 +120,21 @@ export default function Editor() {
     const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
     const duration = isImage || isAudio ? 5 : 15;
 
-    let color = '#2196F3'; 
-    if (isImage) color = '#FF9800'; 
-    if (isAudio) color = '#00BCD4'; 
+    let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
 
     setProject(prev => {
+      let spawnTime = currentTime;
       const newTracks = prev.tracks.map(t => {
         if (t.type === targetType && (targetType === 'main_video' || targetType === 'audio')) {
-          
-          // RIPPLE EDIT: Push all clips that exist *after* the playhead forward to make room
           const adjustedClips = t.clips.map(c => {
-             if (c.timelineStartTime >= currentTime) {
-                return { ...c, timelineStartTime: c.timelineStartTime + duration };
-             }
+             if (c.timelineStartTime >= currentTime) return { ...c, timelineStartTime: c.timelineStartTime + duration };
              return c;
           });
-
           const newClip = { 
             id: newClipId, name: file.name, type: isAudio ? 'audio' : (isImage ? 'image' : 'video'), 
             timelineStartTime: currentTime, duration, color, url: fileUrl, 
             zoom: 1.0, panX: 0, panY: 0, originX: 50, originY: 50, speed: 1.0, muted: false, transformKeyframes: [] 
           };
-          
           return { ...t, clips: [...adjustedClips, newClip] };
         }
         return t;
@@ -167,7 +147,6 @@ export default function Editor() {
         const audioIndex = newTracks.findIndex(t => t.type === 'audio');
         newTracks.splice(audioIndex, 0, newTrack);
       }
-      
       return { ...prev, duration: Math.max(prev.duration, currentTime + duration + 5), tracks: newTracks, selectedClipId: newClipId };
     });
     e.target.value = ''; 
@@ -181,13 +160,8 @@ export default function Editor() {
         return { ...t, clips: t.clips.map(c => {
             if (c.id !== selectedData.clip.id) return c;
             const updatedClip = { ...c, zoom: newZoom, originX, originY };
-            
-            if (t.type === 'overlay') {
-              updatedClip.posX = newX; updatedClip.posY = newY;
-            } else {
-              updatedClip.panX = newX; updatedClip.panY = newY;
-            }
-
+            if (t.type === 'overlay') { updatedClip.posX = newX; updatedClip.posY = newY; } 
+            else { updatedClip.panX = newX; updatedClip.panY = newY; }
             if (isPlaying) {
               updatedClip.transformKeyframes = [...(c.transformKeyframes || []), { time: timeRef.current, zoom: newZoom, x: newX, y: newY, originX, originY }];
             }
@@ -199,41 +173,46 @@ export default function Editor() {
     });
   };
 
-  // --- NEW: TARGETED ZOOM MATH ---
   const getPinchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-  
-  const getPinchCenter = (touches, rect) => {
-    const avgX = (touches[0].clientX + touches[1].clientX) / 2;
-    const avgY = (touches[0].clientY + touches[1].clientY) / 2;
-    // Return percentage-based origin
-    return {
-      x: ((avgX - rect.left) / rect.width) * 100,
-      y: ((avgY - rect.top) / rect.height) * 100
-    };
-  };
+  const getPinchCenter = (touches, rect) => ({
+    x: (((touches[0].clientX + touches[1].clientX) / 2 - rect.left) / rect.width) * 100,
+    y: (((touches[0].clientY + touches[1].clientY) / 2 - rect.top) / rect.height) * 100
+  });
 
   const handleViewportTouchStart = (e) => {
     if (!selectedData || !containerRef.current) return;
-    e.preventDefault(); 
     const rect = containerRef.current.getBoundingClientRect();
 
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && selectedData.trackId === 't-main') {
+      e.preventDefault(); 
       const center = getPinchCenter(e.touches, rect);
-      // If we are starting a fresh pinch, set the origin to where the fingers are
       pinchRef.current = { active: true, startDist: getPinchDistance(e.touches), startZoom: selectedData.clip.zoom || 1, originX: center.x, originY: center.y };
       setLiveTransform(prev => ({ ...prev, originX: center.x, originY: center.y }));
     } 
-    else if (e.touches.length === 1) {
+    else if (e.touches.length === 1 && selectedData.trackId === 't-main') {
+      e.preventDefault();
       panRef.current = { 
         active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, 
-        startPosX: selectedData.clip.posX || 50, startPosY: selectedData.clip.posY || 50,
         startPanX: selectedData.clip.panX || 0, startPanY: selectedData.clip.panY || 0 
       };
     }
   };
 
-  const handleOverlayTouchStart = (e, clipId) => {
+  const handleOverlayTouchStart = (e, clipId, trackId) => {
     e.stopPropagation();
+    
+    // NEW: Offset Math. Instead of snapping to center, we record exactly where on the clip you touched.
+    const rect = e.target.getBoundingClientRect();
+    const centerX = rect.left + (rect.width / 2);
+    const centerY = rect.top + (rect.height / 2);
+    
+    dragOffset.current = {
+      x: e.touches[0].clientX - centerX,
+      y: e.touches[0].clientY - centerY
+    };
+
+    activeDragClip.current = { clipId, trackId };
+    isDraggingOverlay.current = true;
     setProject(prev => ({ ...prev, selectedClipId: clipId }));
   };
 
@@ -244,33 +223,34 @@ export default function Editor() {
     if (pinchRef.current.active && e.touches.length === 2) {
       const scaleMultiplier = getPinchDistance(e.touches) / pinchRef.current.startDist;
       const newZoom = Math.max(0.2, Math.min(5.0, pinchRef.current.startZoom * scaleMultiplier));
-      
       setLiveTransform(prev => ({ ...prev, zoom: newZoom })); 
       const isOverlay = selectedData.track.type === 'overlay';
       saveTransform(newZoom, isOverlay ? (selectedData.clip.posX || 50) : (selectedData.clip.panX || 0), isOverlay ? (selectedData.clip.posY || 50) : (selectedData.clip.panY || 0), pinchRef.current.originX, pinchRef.current.originY);
     } 
-    else if (panRef.current.active && e.touches.length === 1) {
-      const isOverlay = selectedData.track.type === 'overlay';
+    else if (panRef.current.active && e.touches.length === 1 && selectedData.trackId === 't-main') {
+      const deltaX = e.touches[0].clientX - panRef.current.startX;
+      const deltaY = e.touches[0].clientY - panRef.current.startY;
+      const newPanX = panRef.current.startPanX + deltaX;
+      const newPanY = panRef.current.startPanY + deltaY;
+      setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY }));
+      saveTransform(selectedData.clip.zoom || 1, newPanX, newPanY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
+    }
+    // NEW: Butter-Smooth Offset Dragging for Overlays
+    else if (isDraggingOverlay.current && activeDragClip.current && e.touches.length === 1) {
+      // Subtract the initial offset so the center of the video doesn't teleport to your finger
+      const targetX = e.touches[0].clientX - dragOffset.current.x;
+      const targetY = e.touches[0].clientY - dragOffset.current.y;
       
-      if (isOverlay) {
-        const newX = Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left) / rect.width) * 100));
-        const newY = Math.max(0, Math.min(100, ((e.touches[0].clientY - rect.top) / rect.height) * 100));
-        setLiveTransform(prev => ({ ...prev, posX: newX, posY: newY }));
-        saveTransform(selectedData.clip.zoom || 1, newX, newY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
-      } else {
-        const deltaX = e.touches[0].clientX - panRef.current.startX;
-        const deltaY = e.touches[0].clientY - panRef.current.startY;
-        const newPanX = panRef.current.startPanX + deltaX;
-        const newPanY = panRef.current.startPanY + deltaY;
-        setLiveTransform(prev => ({ ...prev, panX: newPanX, panY: newPanY }));
-        saveTransform(selectedData.clip.zoom || 1, newPanX, newPanY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
-      }
+      const newX = Math.max(0, Math.min(100, ((targetX - rect.left) / rect.width) * 100));
+      const newY = Math.max(0, Math.min(100, ((targetY - rect.top) / rect.height) * 100));
+      
+      setLiveTransform(prev => ({ ...prev, posX: newX, posY: newY }));
+      saveTransform(selectedData.clip.zoom || 1, newX, newY, selectedData.clip.originX || 50, selectedData.clip.originY || 50);
     }
   };
 
-  const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; };
+  const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; };
 
-  // --- TIMELINE INTERACTION ---
   const startInteraction = (e, type, payload) => {
     e.stopPropagation();
     interaction.current = { type, startX: e.touches[0].clientX, ...payload };
@@ -283,8 +263,9 @@ export default function Editor() {
     const deltaSeconds = (e.touches[0].clientX - startX) / project.zoomLevel;
 
     if (type === 'scrub') {
-      setCurrentTime(Math.max(0, initialStart + deltaSeconds));
-      timeRef.current = Math.max(0, initialStart + deltaSeconds);
+      const newTime = Math.max(0, initialStart + deltaSeconds);
+      setCurrentTime(newTime);
+      timeRef.current = newTime;
       return;
     }
 
@@ -311,7 +292,6 @@ export default function Editor() {
   };
   const handleTimelineTouchEnd = () => { interaction.current.type = null; };
 
-  // --- COMPOSITOR ---
   const activeMainClips = project.tracks.find(t => t.type === 'main_video')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
   const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
@@ -323,6 +303,8 @@ export default function Editor() {
         .hide-scroll::-webkit-scrollbar { display: none; }
         .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
         .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        /* NEW: Force video posters to load their first frame to prevent black boxes */
+        video { object-fit: contain; background-color: #000; }
       `}</style>
 
       <input type="file" accept="*/*" ref={mainMediaRef} onChange={(e) => handleAddMedia(e, 'main_video')} style={{ display: 'none' }} />
@@ -358,10 +340,11 @@ export default function Editor() {
           return (
             <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); }} 
                  style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1, 
-                          transformOrigin: `${originX}% ${originY}%`, // TARGETED ZOOM MATTERS
+                          transformOrigin: `${originX}% ${originY}%`, 
                           transform: `translate(${renderPanX}px, ${renderPanY}px) scale(${renderZoom})`, 
                           opacity: project.tracks.find(t=>t.type==='main_video').muted ? 0.5 : 1 }}>
-              {clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} alt="main" /> : <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} playsInline muted={clip.muted || project.tracks.find(t=>t.type==='main_video').muted} />}
+              {clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} alt="main" /> : 
+              <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} playsInline muted={clip.muted || project.tracks.find(t=>t.type==='main_video').muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
             </div>
           );
         })}
@@ -373,14 +356,14 @@ export default function Editor() {
             let posX = clip.posX ?? 50; let posY = clip.posY ?? 50; let renderZoom = clip.zoom || 1.0;
             let originX = clip.originX || 50; let originY = clip.originY || 50;
 
-            if (clip.transformKeyframes?.length > 0 && (!panRef.current.active || project.selectedClipId !== clip.id)) {
+            if (clip.transformKeyframes?.length > 0 && (!isDraggingOverlay.current || project.selectedClipId !== clip.id)) {
               const pastKf = clip.transformKeyframes.filter(kf => kf.time <= currentTime);
               if (pastKf.length > 0) { 
                 posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; 
                 renderZoom = pastKf[pastKf.length - 1].zoom; 
                 originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; 
               }
-            } else if ((panRef.current.active || pinchRef.current.active) && project.selectedClipId === clip.id) {
+            } else if ((isDraggingOverlay.current || pinchRef.current.active) && project.selectedClipId === clip.id) {
               posX = liveTransform.posX || posX; posY = liveTransform.posY || posY; renderZoom = liveTransform.zoom || renderZoom;
               originX = liveTransform.originX || originX; originY = liveTransform.originY || originY;
             }
@@ -388,11 +371,11 @@ export default function Editor() {
             return (
               <div 
                 key={clip.id} 
-                onTouchStart={(e) => handleOverlayTouchStart(e, clip.id)}
+                onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id)}
                 onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); }}
                 style={{ 
                   position: 'absolute', top: `${posY}%`, left: `${posX}%`, 
-                  transformOrigin: `${originX}% ${originY}%`, // TARGETED ZOOM
+                  transformOrigin: `${originX}% ${originY}%`, 
                   transform: `translate(-50%, -50%) scale(${renderZoom})`, 
                   width: '35%', height: '35%', zIndex: 10 + trackIndex, 
                   border: project.selectedClipId === clip.id ? '2px solid #FFF' : '1px dashed rgba(255,255,255,0.4)', 
@@ -402,7 +385,7 @@ export default function Editor() {
                 {clip.type === 'image' ? (
                   <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" />
                 ) : (
-                  <video className="compositor-media" autoPlay={isPlaying} src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} />
+                  <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />
                 )}
               </div>
             );
@@ -486,7 +469,6 @@ export default function Editor() {
             <button onClick={() => setProject(prev => ({...prev, selectedClipId: null}))} style={{...toolIconBtn, color: '#4CAF50'}}><Icons.Done /> <span style={{...toolLabel, color: '#4CAF50'}}>Done</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             
-            {/* THE BLADE TOOL */}
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
 
