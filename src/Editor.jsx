@@ -330,7 +330,7 @@ export default function Editor() {
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
   const isActivelyTouched = (clipId) => (pinchRef.current.active && pinchRef.current.clipId === clipId) || (panRef.current.active && panRef.current.clipId === clipId) || (isDraggingOverlay.current && activeDragClip.current?.clipId === clipId);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', overflow: 'hidden' }}>
       
       {showExportModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -439,7 +439,7 @@ export default function Editor() {
         {activeAudioClips.map(clip => <audio key={clip.id} className="compositor-media" autoPlay={isPlaying} src={clip.url} muted={clip.muted || project.tracks.find(t=>t.type==='audio').muted} />)}
       </div>
 
-      <div style={{ height: '45px', backgroundColor: '#141414', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', borderBottom: '1px solid #222' }}>
+      <div style={{ height: '45px', flexShrink: 0, backgroundColor: '#141414', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', borderBottom: '1px solid #222' }}>
          <span style={{ fontSize: '13px', color: '#AAA', fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>{currentTime.toFixed(1)}s</span>
          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
            <button onClick={handleRewind} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Rewind /></button>
@@ -453,7 +453,7 @@ export default function Editor() {
          </div>
       </div>
 
-      <div onTouchMove={handleTimelineTouchMove} onTouchEnd={handleTimelineTouchEnd} className="hide-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', backgroundColor: '#0A0A0A', position: 'relative', paddingBottom: '90px' }}>
+      <div onTouchMove={handleTimelineTouchMove} onTouchEnd={handleTimelineTouchEnd} className="hide-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', backgroundColor: '#0A0A0A', position: 'relative', paddingBottom: '20px' }}>
         <div style={{ position: 'relative', minWidth: `${project.duration * project.zoomLevel + 100}px`, paddingTop: '30px', minHeight: '100%' }} onClick={() => setProject(p => ({ ...p, selectedClipId: null }))}>
           <div style={{ position: 'absolute', top: 0, left: '70px', right: 0, height: '20px', borderBottom: '1px solid #333', display: 'flex', pointerEvents: 'none' }}>
             {Array.from({ length: Math.ceil(project.duration) }).map((_, i) => (<div key={i} style={{ position: 'absolute', left: `${i * project.zoomLevel}px`, height: '100%', borderLeft: '1px solid #333', paddingLeft: '4px', fontSize: '9px', color: '#666' }}>{i}s</div>))}
@@ -486,7 +486,7 @@ export default function Editor() {
         </div>
       </div>
 
-      <div className="hide-scroll" style={{ height: '80px', backgroundColor: '#141414', borderTop: '1px solid #222', display: 'flex', alignItems: 'center', overflowX: 'auto', padding: '0 15px', position: 'fixed', bottom: 0, width: '100%', zIndex: 50, gap: '15px' }}>
+      <div className="hide-scroll" style={{ height: '80px', flexShrink: 0, backgroundColor: '#141414', borderTop: '1px solid #222', display: 'flex', alignItems: 'center', overflowX: 'auto', padding: '0 15px', width: '100%', gap: '15px' }}>
         {!selectedData ? (
           <>
             <button onClick={() => mainMediaRef.current.click()} style={toolIconBtn}><Icons.AddVideo /> <span style={toolLabel}>Primary</span></button>
