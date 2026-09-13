@@ -29,7 +29,6 @@ export default function Editor() {
   const loadProjectRef = useRef(null);
   const containerRef = useRef(null);
 
-  // NEW: Global App Settings State
   const [appSettings, setAppSettings] = useState({ showGrid: false, autoPause: false, exportRes: '1080p' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -58,14 +57,10 @@ export default function Editor() {
 
   const getSelectedData = () => {
     if (!project.selectedClipId) return null;
-    for (const track of project.tracks) {
-      const clip = track.clips.find(c => c.id === project.selectedClipId);
-      if (clip) return { clip, trackId: track.id, track };
-    }
+    for (const track of project.tracks) { const clip = track.clips.find(c => c.id === project.selectedClipId); if (clip) return { clip, trackId: track.id, track }; }
     return null;
   };
   const selectedData = getSelectedData();
-
   useEffect(() => {
     let interval;
     if (isPlaying) {
@@ -111,7 +106,6 @@ export default function Editor() {
     const audioTrack = project.tracks.find(t => t.type === 'audio');
     if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first."); return; }
     const targetAudio = audioTrack.clips[0];
-    
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClips = [];
@@ -200,24 +194,16 @@ export default function Editor() {
     let inputCount = 0;
     project.tracks.forEach(track => { track.clips.forEach(clip => { if (clip.type !== 'text') { script += `  -i "${clip.name}" \\\n`; inputCount++; } }); });
     if (embedPayload && steganographyFileRef.current?.files[0]) { script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`; }
-    
-    // Dynamic Resolution injection based on App Settings
     const scaleMap = { '1080p': '1920:1080', '4K': '3840:2160' };
     script += `  -filter_complex "\\\n    [0:v]scale=${scaleMap[appSettings.exportRes]}[bg]; \\\n`;
-    
     let overlayIndex = 1;
     project.tracks.filter(t => t.type === 'overlay').forEach(track => {
       track.clips.forEach(clip => {
-        if (clip.chromaKey) {
-          script += `    [${overlayIndex}:v]colorkey=0x00FF00:0.3:0.2[ck${overlayIndex}]; \\\n`;
-          script += `    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
-        } else {
-          script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
-        }
+        if (clip.chromaKey) { script += `    [${overlayIndex}:v]colorkey=0x00FF00:0.3:0.2[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; } 
+        else { script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; }
         overlayIndex++;
       });
     });
-    
     const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
     if (duckingAudio) { script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`; }
     script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mkv`;
@@ -310,7 +296,6 @@ export default function Editor() {
 
   const handleViewportTouchEnd = () => { 
     pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; 
-    // NEW: Auto-Pause Feature execution
     if (appSettings.autoPause && isPlaying) setIsPlaying(false);
   };
 
@@ -344,11 +329,9 @@ export default function Editor() {
   const mainTracks = project.tracks.filter(t => t.type === 'main_video'); const overlayTracks = project.tracks.filter(t => t.type === 'overlay');
   const activeAudioClips = project.tracks.find(t => t.type === 'audio')?.clips.filter(c => currentTime >= c.timelineStartTime && currentTime <= c.timelineStartTime + c.duration) || [];
   const isActivelyTouched = (clipId) => (pinchRef.current.active && pinchRef.current.clipId === clipId) || (panRef.current.active && panRef.current.clipId === clipId) || (isDraggingOverlay.current && activeDragClip.current?.clipId === clipId);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0A0A0A', color: '#ECECEC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* EXPORT MODAL */}
       {showExportModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -367,23 +350,19 @@ export default function Editor() {
         </div>
       )}
 
-      {/* NEW: GLOBAL SETTINGS MODAL */}
       {showSettingsModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <h2 style={{ margin: 0, fontSize: '18px', color: '#FFF' }}>Workspace Settings</h2>
-            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '14px', color: '#CCC' }}>Rule of Thirds Grid</span>
                 <input type="checkbox" checked={appSettings.showGrid} onChange={(e) => setAppSettings(p => ({...p, showGrid: e.target.checked}))} style={{ transform: 'scale(1.5)' }} />
               </div>
-              
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '14px', color: '#CCC' }}>Auto-Pause on Touch Release</span>
                 <input type="checkbox" checked={appSettings.autoPause} onChange={(e) => setAppSettings(p => ({...p, autoPause: e.target.checked}))} style={{ transform: 'scale(1.5)' }} />
               </div>
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '14px', color: '#CCC' }}>Export Target Resolution</span>
                 <select value={appSettings.exportRes} onChange={(e) => setAppSettings(p => ({...p, exportRes: e.target.value}))} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', padding: '8px', borderRadius: '4px' }}>
@@ -392,7 +371,6 @@ export default function Editor() {
                 </select>
               </div>
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => setShowSettingsModal(false)} style={{ backgroundColor: '#4CAF50', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Save Settings</button>
             </div>
@@ -411,21 +389,13 @@ export default function Editor() {
         ref={containerRef} onTouchStart={handleViewportTouchStart} onTouchMove={handleViewportTouchMove} onTouchEnd={handleViewportTouchEnd} onClick={() => setProject(p => ({ ...p, selectedClipId: null }))}
         style={{ flex: '0 0 38%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', touchAction: 'none' }}
       >
-        {/* NEW: Rule of Thirds CSS Grid Overlay */}
         {appSettings.showGrid && (
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 90, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }}>
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} />
-            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} />
-            <div />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} /><div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} /><div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} /><div style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} /><div style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} /><div style={{ borderRight: '1px solid rgba(255,255,255,0.3)' }} /><div />
           </div>
         )}
-
         {isRecording && <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, color: 'red', fontWeight: 'bold', fontSize: '12px', animation: 'blink 1s infinite' }}>● RECORDING</div>}
 
         {mainTracks.map((track, trackIndex) => {
