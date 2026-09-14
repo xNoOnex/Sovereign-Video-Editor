@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import imglyRemoveBackground from '@imgly/background-removal';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 const Icons = {
   Play: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
@@ -36,9 +38,12 @@ export default function Editor() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showStickerModal, setShowStickerModal] = useState(false);
   const [stickerVault, setStickerVault] = useState([]);
-  
-  // NEW: State to trigger the loading spinner while the WASM model boots up
   const [isProcessingAI, setIsProcessingAI] = useState(false);
+
+  // NEW: FFmpeg Render Engine State
+  const ffmpegRef = useRef(new FFmpeg());
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('sovereign_stickers');
@@ -115,29 +120,20 @@ export default function Editor() {
     reader.readAsText(file); e.target.value = '';
   };
 
-  // THE OFFLINE-LOCKED WEBASSEMBLY EXECUTION
+  // NEW: Track Sweeper (Deletes empty ghost layers)
+  const deleteTrack = (trackId) => {
+    setProject(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+  };
+
   const executeWasmCutout = async () => {
     if (!selectedData || selectedData.clip.type === 'text') return;
-    if (selectedData.clip.type === 'video') {
-      alert("AI cutout isolates subjects in images/gifs. Use the Chroma Key tool for video backgrounds!");
-      return;
-    }
-
+    if (selectedData.clip.type === 'video') { alert("AI cutout isolates subjects in images/gifs. Use the Chroma Key tool for video backgrounds!"); return; }
     setIsProcessingAI(true);
     try {
-      // We calculate the exact local path whether it's running in an APK or GH Pages
       const basePath = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
-      const config = {
-        publicPath: basePath + 'assets/imgly/', // Strict local routing
-        model: 'small', // 40MB Quantized Model fits inside the APK and GitHub Pages easily
-        progress: (key, current, total) => {
-          console.log(`Loading ${key}: ${current} of ${total}`);
-        }
-      };
-      
+      const config = { publicPath: basePath + 'assets/imgly/', model: 'small' };
       const imageBlob = await imglyRemoveBackground(selectedData.clip.url, config);
       const newUrl = URL.createObjectURL(imageBlob);
-      
       setProject(prev => {
         const newTracks = prev.tracks.map(t => {
           if (t.id !== selectedData.trackId) return t;
@@ -145,87 +141,39 @@ export default function Editor() {
         });
         return { ...prev, tracks: newTracks };
       });
-    } catch (error) {
-      alert("AI Processing Failed. Ensure your browser allows WebAssembly.");
-      console.error(error);
-    }
+    } catch (error) { alert("AI Processing Failed."); }
     setIsProcessingAI(false);
   };
 
   const handleSaveSticker = () => {
     if (!selectedData) return;
-    const newVault = [...stickerVault, selectedData.clip];
-    setStickerVault(newVault);
-    localStorage.setItem('sovereign_stickers', JSON.stringify(newVault));
-    
-    if (selectedData.clip.magicCutout) {
-      const a = document.createElement('a');
-      a.href = selectedData.clip.url;
-      a.download = selectedData.clip.name;
-      document.body.appendChild(a); a.click(); a.remove();
-    }
-    alert("Sticker Saved! If it was an AI Cutout, the transparent PNG has been downloaded so Termux can map it during export.");
+    const newVault = [...stickerVault, selectedData.clip]; setStickerVault(newVault); localStorage.setItem('sovereign_stickers', JSON.stringify(newVault));
+    if (selectedData.clip.magicCutout) { const a = document.createElement('a'); a.href = selectedData.clip.url; a.download = selectedData.clip.name; document.body.appendChild(a); a.click(); a.remove(); }
+    alert("Sticker Saved!");
   };
 
   const handleDropSticker = (stickerClip) => {
     setProject(prev => {
-      const newTracks = [...prev.tracks];
-      const spawnClip = { ...stickerClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime };
+      const newTracks = [...prev.tracks]; const spawnClip = { ...stickerClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime };
       const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
       const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Sticker`, muted: false, clips: [spawnClip] };
-      const audioIndex = newTracks.findIndex(t => t.type === 'audio');
-      newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+      const audioIndex = newTracks.findIndex(t => t.type === 'audio'); newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
       return { ...prev, duration: Math.max(prev.duration, currentTime + spawnClip.duration + 5), tracks: newTracks, selectedClipId: spawnClip.id };
     });
     setShowStickerModal(false);
   };
 
-  const handleAutoCaptions = () => {
-    const audioTrack = project.tracks.find(t => t.type === 'audio');
-    if (!audioTrack || audioTrack.clips.length === 0) { alert("Add an audio or voiceover track first."); return; }
-    const targetAudio = audioTrack.clips[0];
-    setProject(prev => {
-      const newTracks = [...prev.tracks]; const newClips = [];
-      for(let i=0; i < targetAudio.duration; i+=2) {
-         newClips.push({ id: 'c-' + Math.random().toString(36).substr(2, 9), name: `Caption ${i}`, type: 'text', text: `Caption [${i}s]`, timelineStartTime: targetAudio.timelineStartTime + i, duration: 2, color: '#E91E63', url: null, zoom: 1.5, panX: 0, panY: 0, posX: 50, posY: 90, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] });
-      }
-      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
-      newTracks.splice(newTracks.findIndex(t => t.type === 'audio'), 0, { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Captions`, muted: false, clips: newClips });
-      return { ...prev, tracks: newTracks, selectedClipId: newClips[0].id };
-    });
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder; audioChunksRef.current = []; recordStartTime.current = currentTime;
-      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        insertMediaDirectly('audio', URL.createObjectURL(audioBlob), `Voiceover_${Math.floor(recordStartTime.current)}s`, timeRef.current - recordStartTime.current, '#E91E63', recordStartTime.current);
-        stream.getTracks().forEach(track => track.stop()); 
-      };
-      mediaRecorder.start(); setIsRecording(true); setIsPlaying(true); 
-    } catch (err) { alert("Microphone permission denied."); }
-  };
-  const stopRecording = () => { setIsRecording(false); setIsPlaying(false); if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop(); };
-
   const insertMediaDirectly = (targetType, fileUrl, fileName, duration, defaultColor, forceStartTime = null, explicitType = null) => {
-    const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
-    const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
+    const newClipId = 'c-' + Math.random().toString(36).substr(2, 9); const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
     setProject(prev => {
       const newTracks = [...prev.tracks];
       const newClip = { 
-        id: newClipId, name: fileName, type: explicitType || targetType, 
-        timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false,
+        id: newClipId, name: fileName, type: explicitType || targetType, timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false,
         zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
       };
-      if (targetType === 'audio') {
-        const audioTrack = newTracks.find(t => t.type === 'audio'); if (audioTrack) audioTrack.clips.push(newClip);
-      } else {
-        const prefix = targetType === 'main_video' ? 'V' : 'Layer ';
-        const count = newTracks.filter(t => t.type === targetType).length + 1;
+      if (targetType === 'audio') { const audioTrack = newTracks.find(t => t.type === 'audio'); if (audioTrack) audioTrack.clips.push(newClip); } 
+      else {
+        const prefix = targetType === 'main_video' ? 'V' : 'Layer '; const count = newTracks.filter(t => t.type === targetType).length + 1;
         const newTrack = { id: `t-${targetType}-${count}`, type: targetType, name: `${prefix}${count}`, muted: false, clips: [newClip] };
         let insertIndex = newTracks.length;
         if (targetType === 'main_video') { const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio'); if (idx !== -1) insertIndex = idx; } 
@@ -238,31 +186,16 @@ export default function Editor() {
 
   const handleAddMedia = (e, targetType) => {
     const file = e.target.files[0]; if (!file) return;
-    const isImage = file.type.startsWith('image/'); const isAudio = file.type.startsWith('audio/'); const isVideo = file.type.startsWith('video/');
-    let color = '#2196F3'; if (isImage) color = '#FF9800'; if (isAudio) color = '#00BCD4'; 
+    const isImage = file.type.startsWith('image/'); const isVideo = file.type.startsWith('video/');
+    let color = '#2196F3'; if (isImage) color = '#FF9800'; else if (targetType === 'audio') color = '#00BCD4'; 
     let finalType = isImage ? 'image' : (isVideo ? 'video' : 'audio');
-    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || isAudio ? 5 : 15, color, null, finalType); e.target.value = ''; 
+    insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || targetType === 'audio' ? 5 : 15, color, null, finalType); e.target.value = ''; 
   };
 
-  const handleAddText = () => {
-    const textInput = window.prompt("Enter Text or Emoji:"); if (!textInput) return;
-    setProject(prev => {
-      const newTracks = [...prev.tracks];
-      const newClip = { 
-        id: 'c-' + Math.random().toString(36).substr(2, 9), name: textInput, type: 'text', text: textInput, timelineStartTime: currentTime, duration: 5, color: '#E91E63', url: null, 
-        zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
-      };
-      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
-      const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Text ${overlayCount}`, muted: false, clips: [newClip] };
-      const audioIndex = newTracks.findIndex(t => t.type === 'audio'); newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
-      return { ...prev, duration: Math.max(prev.duration, currentTime + 10), tracks: newTracks, selectedClipId: newClip.id };
-    });
-  };
-
+  // Compiler prepares script, Renderer actually builds the video
   const compileFFmpegScript = () => {
     let script = "# Sovereign FFmpeg Export Script\nffmpeg \\\n";
-    let inputCount = 0;
-    project.tracks.forEach(track => { track.clips.forEach(clip => { if (clip.type !== 'text') { script += `  -i "${clip.name}" \\\n`; inputCount++; } }); });
+    project.tracks.forEach(track => { track.clips.forEach(clip => { if (clip.type !== 'text') script += `  -i "${clip.name}" \\\n`; }); });
     if (embedPayload && steganographyFileRef.current?.files[0]) { script += `  -attach "${steganographyFileRef.current.files[0].name}" \\\n  -metadata:s:t mimetype=application/octet-stream \\\n`; }
     const scaleMap = { '1080p': '1920:1080', '4K': '3840:2160' };
     script += `  -filter_complex "\\\n    [0:v]scale=${scaleMap[appSettings.exportRes]}[bg]; \\\n`;
@@ -270,52 +203,88 @@ export default function Editor() {
     let overlayIndex = 1;
     project.tracks.filter(t => t.type === 'overlay').forEach(track => {
       track.clips.forEach(clip => {
-        let fx = '';
-        if (clip.chromaKey) fx = `colorkey=0x00FF00:0.3:0.2`;
-        if (fx) {
-          script += `    [${overlayIndex}:v]${fx}[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
-        } else {
-          script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`;
-        }
+        let fx = clip.chromaKey ? `colorkey=0x00FF00:0.3:0.2` : '';
+        if (fx) { script += `    [${overlayIndex}:v]${fx}[ck${overlayIndex}]; \\\n    [bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; } 
+        else { script += `    [bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}]; \\\n`; }
         overlayIndex++;
       });
     });
     
     const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
     if (duckingAudio) { script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`; }
-    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mkv`;
+    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mp4`;
     setFfmpegScript(script); setShowExportModal(true);
+  };
+
+  // NEW: The Actual Physical Renderer
+  const renderVideo = async () => {
+    setIsRendering(true); setRenderProgress(0);
+    const ffmpeg = ffmpegRef.current;
+    try {
+      if (!ffmpeg.loaded) await ffmpeg.load();
+      ffmpeg.on('progress', ({ progress }) => setRenderProgress(Math.round(progress * 100)));
+
+      let args = [];
+      const scaleMap = { '1080p': '1920:1080', '4K': '3840:2160' };
+      let filterStr = `[0:v]scale=${scaleMap[appSettings.exportRes]}[bg];`;
+
+      let overlayIndex = 1;
+      for (const track of project.tracks) {
+        for (const clip of track.clips) {
+          if (clip.type !== 'text') {
+            const fileData = await fetchFile(clip.url);
+            await ffmpeg.writeFile(clip.name, fileData);
+            args.push('-i', clip.name);
+          }
+        }
+      }
+
+      for (const track of project.tracks) {
+        if (track.type === 'overlay') {
+          for (const clip of track.clips) {
+            if (clip.type === 'text') continue; 
+            let fx = clip.chromaKey ? `colorkey=0x00FF00:0.3:0.2` : '';
+            if (fx) { filterStr += `[${overlayIndex}:v]${fx}[ck${overlayIndex}];[bg][ck${overlayIndex}]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}];`; } 
+            else { filterStr += `[bg][${overlayIndex}:v]overlay=${clip.posX * 19.2}:${clip.posY * 10.8}:enable='between(t,${clip.timelineStartTime},${clip.timelineStartTime + clip.duration})'[out${overlayIndex}];`; }
+            overlayIndex++;
+          }
+        }
+      }
+
+      const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
+      if (duckingAudio) filterStr += `[0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud];`;
+
+      args.push('-filter_complex', filterStr);
+      args.push('-map', `[out${overlayIndex - 1 || 'bg'}]`);
+      args.push(duckingAudio ? '-map' : '-map', duckingAudio ? '[aud]' : '0:a?');
+      args.push('-preset', 'ultrafast', 'output_sovereign.mp4');
+
+      await ffmpeg.exec(args);
+      const data = await ffmpeg.readFile('output_sovereign.mp4');
+      const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+      const videoUrl = URL.createObjectURL(videoBlob);
+
+      const a = document.createElement('a'); a.href = videoUrl; a.download = 'Sovereign_Render.mp4';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (error) { alert("Rendering failed. The device may have run out of RAM."); }
+    setIsRendering(false);
   };
 
   const handleSplitClip = () => {
     if (!selectedData) return;
-    const { clip, trackId } = selectedData;
-    const localTime = currentTime - clip.timelineStartTime;
+    const { clip, trackId } = selectedData; const localTime = currentTime - clip.timelineStartTime;
     if (localTime > 0.2 && localTime < clip.duration - 0.2) {
       setProject(prev => {
         const newTracks = prev.tracks.map(t => {
           if (t.id !== trackId) return t;
-          const cIndex = t.clips.findIndex(c => c.id === clip.id);
-          const oldClip = t.clips[cIndex];
-          const clipA = { ...oldClip, duration: localTime };
-          const clipB = { ...oldClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime, duration: oldClip.duration - localTime };
+          const cIndex = t.clips.findIndex(c => c.id === clip.id); const oldClip = t.clips[cIndex];
+          const clipA = { ...oldClip, duration: localTime }; const clipB = { ...oldClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime, duration: oldClip.duration - localTime };
           const newClips = [...t.clips]; newClips.splice(cIndex, 1, clipA, clipB);
           return { ...t, clips: newClips };
         });
         return { ...prev, tracks: newTracks, selectedClipId: null };
       });
     }
-  };
-
-  const updateSelectedClip = (key, value) => {
-    if (!selectedData) return;
-    setProject(prev => {
-      const newTracks = prev.tracks.map(t => {
-        if (t.id !== selectedData.trackId) return t;
-        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
-      });
-      return { ...prev, tracks: newTracks };
-    });
   };
 
   const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
@@ -382,11 +351,7 @@ export default function Editor() {
     }
   };
 
-  const handleViewportTouchEnd = () => { 
-    pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; 
-    if (appSettings.autoPause && isPlaying) setIsPlaying(false);
-  };
-
+  const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; if (appSettings.autoPause && isPlaying) setIsPlaying(false); };
   const startInteraction = (e, type, payload) => { e.stopPropagation(); interaction.current = { type, startX: e.touches[0].clientX, ...payload }; if (type === 'trim' || type === 'move') { setProject(prev => ({ ...prev, selectedClipId: payload.clipId })); setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 }); } };
   
   const handleTimelineTouchMove = (e) => {
@@ -423,17 +388,25 @@ export default function Editor() {
       {showExportModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <h2 style={{ margin: 0, fontSize: '18px', color: '#4CAF50' }}>Sovereign FFmpeg Compiler</h2>
+            <h2 style={{ margin: 0, fontSize: '18px', color: '#4CAF50' }}>Sovereign Renderer</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input type="checkbox" id="steg" checked={embedPayload} onChange={(e) => setEmbedPayload(e.target.checked)} />
               <label htmlFor="steg" style={{ fontSize: '12px', color: '#E91E63', fontWeight: 'bold' }}>Embed Ghost Payload</label>
             </div>
             {embedPayload && <input type="file" ref={steganographyFileRef} style={{ fontSize: '12px', color: '#FFF' }} />}
-            <textarea readOnly value={ffmpegScript} style={{ width: '100%', height: '200px', backgroundColor: '#000', color: '#00BCD4', border: '1px solid #333', borderRadius: '8px', padding: '10px', fontFamily: 'monospace', fontSize: '10px' }} />
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowExportModal(false)} style={{ backgroundColor: 'transparent', color: '#FFF', border: 'none', padding: '10px', cursor: 'pointer' }}>Close</button>
-              <button onClick={compileFFmpegScript} style={{ backgroundColor: '#4CAF50', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Update Logic</button>
-            </div>
+            <textarea readOnly value={ffmpegScript} style={{ width: '100%', height: '120px', backgroundColor: '#000', color: '#00BCD4', border: '1px solid #333', borderRadius: '8px', padding: '10px', fontFamily: 'monospace', fontSize: '10px' }} />
+            
+            {/* NEW RENDER PROGRESS UI */}
+            {isRendering ? (
+               <div style={{ textAlign: 'center', padding: '15px', color: '#FF9800', fontWeight: 'bold', fontSize: '14px', animation: 'blink 1s infinite' }}>
+                 Rendering Video... {renderProgress}%
+               </div>
+            ) : (
+               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                 <button onClick={() => setShowExportModal(false)} style={{ backgroundColor: 'transparent', color: '#FFF', border: 'none', padding: '10px', cursor: 'pointer' }}>Close</button>
+                 <button onClick={renderVideo} style={{ backgroundColor: '#FF9800', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Render to Gallery</button>
+               </div>
+            )}
           </div>
         </div>
       )}
@@ -486,7 +459,7 @@ export default function Editor() {
         </div>
       )}
 
-      <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } @keyframes spin { 100% { transform: rotate(360deg); } } `}</style>
+      <style>{` .hide-scroll::-webkit-scrollbar { display: none; } .pro-slider { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; } .pro-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #FFF; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); } video { object-fit: contain; background-color: #000; } @keyframes spin { 100% { transform: rotate(360deg); } } @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } } `}</style>
 
       <input type="file" accept=".json" ref={loadProjectRef} onChange={handleLoadProject} style={{ display: 'none' }} />
       <input type="file" accept="*/*" ref={mainMediaRef} onChange={(e) => handleAddMedia(e, 'main_video')} style={{ display: 'none' }} />
@@ -533,9 +506,11 @@ export default function Editor() {
               if (pastKf.length > 0) { posX = pastKf[pastKf.length - 1].x; posY = pastKf[pastKf.length - 1].y; renderZoom = pastKf[pastKf.length - 1].zoom; originX = pastKf[pastKf.length - 1].originX || 50; originY = pastKf[pastKf.length - 1].originY || 50; renderOpacity = pastKf[pastKf.length - 1].opacity ?? renderOpacity; }
             } else if (isActivelyTouched(clip.id)) { posX = liveTransform.posX; posY = liveTransform.posY; renderZoom = liveTransform.zoom; originX = liveTransform.originX; originY = liveTransform.originY; renderOpacity = liveTransform.opacity; }
 
+            const visualFilter = clip.chromaKey ? 'hue-rotate(90deg) drop-shadow(0 0 10px #000)' : 'none';
+
             return (
               <div key={clip.id} onTouchStart={(e) => handleOverlayTouchStart(e, clip.id, track.id, clip)} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }}
-                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity }}
+                style={{ position: 'absolute', top: `${posY}%`, left: `${posX}%`, transformOrigin: `${originX}% ${originY}%`, transform: `translate(-50%, -50%) scale(${renderZoom})`, width: clip.type === 'text' ? 'auto' : '35%', height: clip.type === 'text' ? 'auto' : '35%', zIndex: 50 + trackIndex, border: project.selectedClipId === clip.id ? '2px solid #FFF' : (clip.type === 'text' ? 'none' : '1px dashed rgba(255,255,255,0.4)'), borderRadius: '8px', overflow: clip.type === 'text' ? 'visible' : 'hidden', boxShadow: clip.type === 'text' ? 'none' : '0 10px 30px rgba(0,0,0,0.5)', cursor: 'pointer', opacity: renderOpacity, filter: visualFilter }}
               >
                 {clip.type === 'text' ? <div style={{ fontSize: '40px', padding: '5px', pointerEvents: 'none', whiteSpace: 'nowrap', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{clip.text}</div> : clip.type === 'image' ? <img src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} alt="pip" /> : <video className="compositor-media" autoPlay={isPlaying} preload="auto" src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} playsInline muted={clip.muted || track.muted} onLoadedData={(e) => { e.target.currentTime = 0.001; }} />}
               </div>
@@ -571,7 +546,13 @@ export default function Editor() {
             <div key={track.id} style={{ display: 'flex', marginBottom: '4px', height: '60px', position: 'relative', backgroundColor: 'transparent' }}>
               <div style={{ position: 'sticky', left: 0, width: '70px', backgroundColor: '#141414', borderRight: '1px solid #222', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
                 <span style={{ fontSize: '10px', color: '#AAA', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', textAlign: 'center', marginBottom: '4px' }}>{track.name}</span>
-                <button onClick={() => toggleTrackMute(track.id)} style={{ background: 'transparent', color: track.muted ? '#E91E63' : '#666', border: 'none', padding: '4px' }}>{track.muted ? <Icons.Mute /> : <Icons.Unmute />}</button>
+                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                  <button onClick={() => toggleTrackMute(track.id)} style={{ background: 'transparent', color: track.muted ? '#E91E63' : '#666', border: 'none', padding: '4px' }}>{track.muted ? <Icons.Mute /> : <Icons.Unmute />}</button>
+                  {/* NEW: THE TRACK SWEEPER. Shows red X to delete track if empty */}
+                  {track.clips.length === 0 && track.type !== 'main_video' && track.type !== 'audio' && (
+                    <button onClick={() => deleteTrack(track.id)} style={{ background: 'transparent', color: '#f44336', border: 'none', padding: '4px', cursor: 'pointer' }}><Icons.Delete /></button>
+                  )}
+                </div>
               </div>
               <div style={{ position: 'relative', flex: 1, backgroundColor: '#111', borderRadius: '4px', overflow: 'hidden', margin: '0 5px' }}>
                 {track.clips.map(clip => (
@@ -600,7 +581,6 @@ export default function Editor() {
             <button onClick={() => pipMediaRef.current.click()} style={{ ...toolIconBtn, color: '#FF9800' }}><Icons.AddVideo /> <span style={{...toolLabel, color: '#FF9800'}}>Overlay</span></button>
             <button onClick={handleAddText} style={{ ...toolIconBtn, color: '#E91E63' }}><Icons.Text /> <span style={{...toolLabel, color: '#E91E63'}}>Text</span></button>
             <button onClick={() => setShowStickerModal(true)} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Stickers</span></button>
-            <button onClick={handleAutoCaptions} style={{ ...toolIconBtn, color: '#9C27B0' }}><Icons.Wand /> <span style={{...toolLabel, color: '#9C27B0'}}>Captions</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
             {isRecording ? (
               <button onClick={stopRecording} style={{ ...toolIconBtn, color: '#f44336' }}><Icons.Stop /> <span style={{...toolLabel, color: '#f44336', animation: 'blink 1s infinite'}}>Recording...</span></button>
@@ -621,7 +601,6 @@ export default function Editor() {
                   {isProcessingAI ? <div style={{width: 16, height: 16, border: '2px solid #FF9800', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite'}} /> : <Icons.Cutout />}
                   <span style={{...toolLabel, color: selectedData.clip.magicCutout ? '#FF9800' : '#AAA'}}>{isProcessingAI ? 'Masking...' : 'Cutout'}</span>
                 </button>
-                
                 <button onClick={handleSaveSticker} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Save</span></button>
               </>
             )}
