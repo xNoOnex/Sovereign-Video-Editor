@@ -115,21 +115,23 @@ export default function Editor() {
     reader.readAsText(file); e.target.value = '';
   };
 
-  // NEW: The WebAssembly Execution Block
+  // THE OFFLINE-LOCKED WEBASSEMBLY EXECUTION
   const executeWasmCutout = async () => {
     if (!selectedData || selectedData.clip.type === 'text') return;
-    
-    // Safety check: The WASM model runs natively on images.
     if (selectedData.clip.type === 'video') {
-      alert("AI cutout currently isolates subjects in images. Use the Chroma Key tool for video backgrounds!");
+      alert("AI cutout isolates subjects in images/gifs. Use the Chroma Key tool for video backgrounds!");
       return;
     }
 
     setIsProcessingAI(true);
     try {
+      // We calculate the exact local path whether it's running in an APK or GH Pages
+      const basePath = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
       const config = {
+        publicPath: basePath + 'assets/imgly/', // Strict local routing
+        model: 'small', // 40MB Quantized Model fits inside the APK and GitHub Pages easily
         progress: (key, current, total) => {
-          console.log(`Downloading ${key}: ${current} of ${total}`);
+          console.log(`Loading ${key}: ${current} of ${total}`);
         }
       };
       
@@ -145,11 +147,11 @@ export default function Editor() {
       });
     } catch (error) {
       alert("AI Processing Failed. Ensure your browser allows WebAssembly.");
+      console.error(error);
     }
     setIsProcessingAI(false);
   };
 
-  // NEW: Physical file bridge. Saving the sticker downloads it so Termux can find the isolated asset.
   const handleSaveSticker = () => {
     if (!selectedData) return;
     const newVault = [...stickerVault, selectedData.clip];
