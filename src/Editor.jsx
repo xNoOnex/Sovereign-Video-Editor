@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import imglyRemoveBackground from '@imgly/background-removal';
+import { removeBackground } from '@imgly/background-removal';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 
@@ -132,7 +132,7 @@ export default function Editor() {
     try {
       const basePath = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
       const config = { publicPath: basePath + 'assets/imgly/', model: 'small' };
-      const imageBlob = await imglyRemoveBackground(selectedData.clip.url, config);
+      const imageBlob = await removeBackground(selectedData.clip.url, config);
       const newUrl = URL.createObjectURL(imageBlob);
       setProject(prev => {
         const newTracks = prev.tracks.map(t => {
