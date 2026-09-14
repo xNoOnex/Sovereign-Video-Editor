@@ -21,10 +21,12 @@ const Icons = {
   Save: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>,
   Load: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6zm-4 10c0-1.66-1.34-3-3-3s-3 1.34-3 3 1.34 3 3 3 3-1.34 3-3zm-6-2.5V21h10v-4.5l-5-5-5 5zM5 19v-2h4v2H5zm0-4v-2h8v2H5zm0-4V9h14v2H5z"/></svg>,
   GreenScreen: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>,
-  Wand: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>,
   Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54C9.77,21.83,9.97,22,10.21,22h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>,
   Cutout: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z"/></svg>,
-  Sticker: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+  Sticker: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>,
+  Undo: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C20.91 11.13 17.1 8 12.5 8z"/></svg>,
+  Redo: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.6 0-8.41 3.13-9.97 7.22l2.37.78c1.05-3.19 4.06-5.5 7.6-5.5 1.96 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>,
+  AudioDSP: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>
 };
 
 export default function Editor() {
@@ -37,20 +39,23 @@ export default function Editor() {
   const [appSettings, setAppSettings] = useState({ showGrid: false, autoPause: false, exportRes: '1080p' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showStickerModal, setShowStickerModal] = useState(false);
+  const [showAudioDSPModal, setShowAudioDSPModal] = useState(false);
   const [stickerVault, setStickerVault] = useState([]);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
 
-  // NEW: FFmpeg Render Engine State
   const ffmpegRef = useRef(new FFmpeg());
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('sovereign_stickers');
-    if (saved) { try { setStickerVault(JSON.parse(saved)); } catch (e) { } }
-  }, []);
+  // Undo / Redo Buffers (Max 25 states)
+  const historyStack = useRef([]);
+  const futureStack = useRef([]);
 
-  const [project, setProject] = useState({ duration: 30, zoomLevel: 15, selectedClipId: null, tracks: [{ id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }] });
+  const [project, setProject] = useState({
+    duration: 30, zoomLevel: 15, selectedClipId: null,
+    tracks: [{ id: 't-audio-1', type: 'audio', name: 'Audio/SFX', muted: false, clips: [] }]
+  });
+
   const [currentTime, setCurrentTime] = useState(0);
   const timeRef = useRef(0); 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -75,10 +80,40 @@ export default function Editor() {
 
   const getSelectedData = () => {
     if (!project.selectedClipId) return null;
-    for (const track of project.tracks) { const clip = track.clips.find(c => c.id === project.selectedClipId); if (clip) return { clip, trackId: track.id, track }; }
+    for (const track of project.tracks) {
+      const clip = track.clips.find(c => c.id === project.selectedClipId);
+      if (clip) return { clip, trackId: track.id, track };
+    }
     return null;
   };
   const selectedData = getSelectedData();
+  useEffect(() => {
+    const saved = localStorage.getItem('sovereign_stickers');
+    if (saved) { try { setStickerVault(JSON.parse(saved)); } catch (e) { } }
+  }, []);
+
+  // COMMIT STATE TO HISTORY
+  const commitState = (newProject) => {
+    historyStack.current.push(JSON.parse(JSON.stringify(project)));
+    if (historyStack.current.length > 25) historyStack.current.shift();
+    futureStack.current = []; // Fresh action breaks the redo branch
+    setProject(newProject);
+  };
+
+  const undo = () => {
+    if (historyStack.current.length === 0) return;
+    const previous = historyStack.current.pop();
+    futureStack.current.push(JSON.parse(JSON.stringify(project)));
+    setProject(previous);
+  };
+
+  const redo = () => {
+    if (futureStack.current.length === 0) return;
+    const next = futureStack.current.pop();
+    historyStack.current.push(JSON.parse(JSON.stringify(project)));
+    setProject(next);
+  };
+
   useEffect(() => {
     let interval;
     if (isPlaying) {
@@ -116,31 +151,28 @@ export default function Editor() {
   const handleLoadProject = (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => { try { setProject(JSON.parse(event.target.result)); } catch (e) { alert("Invalid project file."); } };
+    reader.onload = (event) => { try { commitState(JSON.parse(event.target.result)); } catch (e) { alert("Invalid project file."); } };
     reader.readAsText(file); e.target.value = '';
   };
 
-  // NEW: Track Sweeper (Deletes empty ghost layers)
   const deleteTrack = (trackId) => {
-    setProject(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+    commitState({ ...project, tracks: project.tracks.filter(t => t.id !== trackId) });
   };
 
   const executeWasmCutout = async () => {
     if (!selectedData || selectedData.clip.type === 'text') return;
-    if (selectedData.clip.type === 'video') { alert("AI cutout isolates subjects in images/gifs. Use the Chroma Key tool for video backgrounds!"); return; }
+    if (selectedData.clip.type === 'video') { alert("Use Chroma Key for video backgrounds!"); return; }
     setIsProcessingAI(true);
     try {
       const basePath = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
       const config = { publicPath: basePath + 'assets/imgly/', model: 'small' };
       const imageBlob = await removeBackground(selectedData.clip.url, config);
       const newUrl = URL.createObjectURL(imageBlob);
-      setProject(prev => {
-        const newTracks = prev.tracks.map(t => {
-          if (t.id !== selectedData.trackId) return t;
-          return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, url: newUrl, name: `Cutout_${c.id}.png`, magicCutout: true } : c) };
-        });
-        return { ...prev, tracks: newTracks };
+      const newTracks = project.tracks.map(t => {
+        if (t.id !== selectedData.trackId) return t;
+        return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, url: newUrl, name: `Cutout_${c.id}.png`, magicCutout: true } : c) };
       });
+      commitState({ ...project, tracks: newTracks });
     } catch (error) { alert("AI Processing Failed."); }
     setIsProcessingAI(false);
   };
@@ -153,35 +185,43 @@ export default function Editor() {
   };
 
   const handleDropSticker = (stickerClip) => {
-    setProject(prev => {
-      const newTracks = [...prev.tracks]; const spawnClip = { ...stickerClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime };
-      const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
-      const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Sticker`, muted: false, clips: [spawnClip] };
-      const audioIndex = newTracks.findIndex(t => t.type === 'audio'); newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
-      return { ...prev, duration: Math.max(prev.duration, currentTime + spawnClip.duration + 5), tracks: newTracks, selectedClipId: spawnClip.id };
-    });
+    const spawnClip = { ...stickerClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime };
+    const overlayCount = project.tracks.filter(t => t.type === 'overlay').length + 1;
+    const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Sticker`, muted: false, clips: [spawnClip] };
+    const newTracks = [...project.tracks];
+    const audioIndex = newTracks.findIndex(t => t.type === 'audio');
+    newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+    commitState({ ...project, duration: Math.max(project.duration, currentTime + spawnClip.duration + 5), tracks: newTracks, selectedClipId: spawnClip.id });
     setShowStickerModal(false);
   };
 
   const insertMediaDirectly = (targetType, fileUrl, fileName, duration, defaultColor, forceStartTime = null, explicitType = null) => {
-    const newClipId = 'c-' + Math.random().toString(36).substr(2, 9); const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
-    setProject(prev => {
-      const newTracks = [...prev.tracks];
-      const newClip = { 
-        id: newClipId, name: fileName, type: explicitType || targetType, timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false,
-        zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
-      };
-      if (targetType === 'audio') { const audioTrack = newTracks.find(t => t.type === 'audio'); if (audioTrack) audioTrack.clips.push(newClip); } 
-      else {
-        const prefix = targetType === 'main_video' ? 'V' : 'Layer '; const count = newTracks.filter(t => t.type === targetType).length + 1;
-        const newTrack = { id: `t-${targetType}-${count}`, type: targetType, name: `${prefix}${count}`, muted: false, clips: [newClip] };
-        let insertIndex = newTracks.length;
-        if (targetType === 'main_video') { const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio'); if (idx !== -1) insertIndex = idx; } 
-        else if (targetType === 'overlay') { const idx = newTracks.findIndex(t => t.type === 'audio'); if (idx !== -1) insertIndex = idx; }
-        newTracks.splice(insertIndex, 0, newTrack);
+    const newClipId = 'c-' + Math.random().toString(36).substr(2, 9);
+    const spawnTime = forceStartTime !== null ? forceStartTime : currentTime;
+    const newClip = { 
+      id: newClipId, name: fileName, type: explicitType || targetType, timelineStartTime: spawnTime, duration, color: defaultColor, url: fileUrl, chromaKey: false, magicCutout: false, audioDucking: false, audioDspPreset: 'none',
+      zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
+    };
+
+    const newTracks = [...project.tracks];
+    if (targetType === 'audio') {
+      const audioTrack = newTracks.find(t => t.type === 'audio');
+      if (audioTrack) audioTrack.clips.push(newClip);
+    } else {
+      const prefix = targetType === 'main_video' ? 'V' : 'Layer ';
+      const count = newTracks.filter(t => t.type === targetType).length + 1;
+      const newTrack = { id: `t-${targetType}-${count}`, type: targetType, name: `${prefix}${count}`, muted: false, clips: [newClip] };
+      let insertIndex = newTracks.length;
+      if (targetType === 'main_video') {
+        const idx = newTracks.findIndex(t => t.type === 'overlay' || t.type === 'audio');
+        if (idx !== -1) insertIndex = idx;
+      } else if (targetType === 'overlay') {
+        const idx = newTracks.findIndex(t => t.type === 'audio');
+        if (idx !== -1) insertIndex = idx;
       }
-      return { ...prev, duration: Math.max(prev.duration, spawnTime + duration + 5), tracks: newTracks, selectedClipId: newClipId };
-    });
+      newTracks.splice(insertIndex, 0, newTrack);
+    }
+    commitState({ ...project, duration: Math.max(project.duration, spawnTime + duration + 5), tracks: newTracks, selectedClipId: newClipId });
   };
 
   const handleAddMedia = (e, targetType) => {
@@ -192,7 +232,36 @@ export default function Editor() {
     insertMediaDirectly(targetType, URL.createObjectURL(file), file.name, isImage || targetType === 'audio' ? 5 : 15, color, null, finalType); e.target.value = ''; 
   };
 
-  // Compiler prepares script, Renderer actually builds the video
+  const handleAddText = () => {
+    const textInput = window.prompt("Enter Text or Emoji:"); if (!textInput) return;
+    const newClip = { 
+      id: 'c-' + Math.random().toString(36).substr(2, 9), name: textInput, type: 'text', text: textInput, timelineStartTime: currentTime, duration: 5, color: '#E91E63', url: null, 
+      zoom: 1.0, panX: 0, panY: 0, posX: 50, posY: 50, originX: 50, originY: 50, opacity: 1.0, speed: 1.0, muted: false, transformKeyframes: [] 
+    };
+    const newTracks = [...project.tracks];
+    const overlayCount = newTracks.filter(t => t.type === 'overlay').length + 1;
+    const newTrack = { id: `t-pip-${overlayCount}`, type: 'overlay', name: `Text ${overlayCount}`, muted: false, clips: [newClip] };
+    const audioIndex = newTracks.findIndex(t => t.type === 'audio');
+    newTracks.splice(audioIndex !== -1 ? audioIndex : newTracks.length, 0, newTrack);
+    commitState({ ...project, duration: Math.max(project.duration, currentTime + 10), tracks: newTracks, selectedClipId: newClip.id });
+  };
+
+  // AUDIO DSP FILTER BUILDER
+  const getAudioFilterString = (preset) => {
+    switch (preset) {
+      case 'bass_cut':
+        return 'highpass=f=250,equalizer=f=80:width_type=h:width=100:g=-18';
+      case 'bass_boost':
+        return 'equalizer=f=80:width_type=h:width=100:g=12';
+      case 'instrumental': // Center-channel vocal elimination
+        return 'pan=stereo|c0=c0-c1|c1=c1-c0';
+      case 'vocals_only': // Center extraction + Speech bandpass
+        return 'pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1,bandpass=f=1500:width_type=h:width=2400';
+      default:
+        return '';
+    }
+  };
+
   const compileFFmpegScript = () => {
     let script = "# Sovereign FFmpeg Export Script\nffmpeg \\\n";
     project.tracks.forEach(track => { track.clips.forEach(clip => { if (clip.type !== 'text') script += `  -i "${clip.name}" \\\n`; }); });
@@ -210,13 +279,24 @@ export default function Editor() {
       });
     });
     
-    const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
-    if (duckingAudio) { script += `    [0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`; }
-    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${duckingAudio ? '-map "[aud]"' : '-map 0:a?'} \\\n  output_sovereign.mp4`;
+    const audioTrack = project.tracks.find(t => t.type === 'audio');
+    const duckingAudio = audioTrack?.clips.find(c => c.audioDucking);
+    const dspAudio = audioTrack?.clips.find(c => c.audioDspPreset && c.audioDspPreset !== 'none');
+    
+    let audioMap = '-map 0:a?';
+    if (dspAudio) {
+      const dspFilter = getAudioFilterString(dspAudio.audioDspPreset);
+      script += `    [1:a]${dspFilter}[dsp_a]; \\\n`;
+      audioMap = '-map "[dsp_a]"';
+    } else if (duckingAudio) {
+      script += `    [0:a][1:a]amix=inputs=2:duration=longest:dropout_transition=2[aud]; \\\n`;
+      audioMap = '-map "[aud]"';
+    }
+
+    script += `  " \\\n  -map "[out${overlayIndex - 1 || 'bg'}]" ${audioMap} \\\n  output_sovereign.mp4`;
     setFfmpegScript(script); setShowExportModal(true);
   };
 
-  // NEW: The Actual Physical Renderer
   const renderVideo = async () => {
     setIsRendering(true); setRenderProgress(0);
     const ffmpeg = ffmpegRef.current;
@@ -251,12 +331,23 @@ export default function Editor() {
         }
       }
 
-      const duckingAudio = project.tracks.find(t => t.type === 'audio')?.clips.find(c => c.audioDucking);
-      if (duckingAudio) filterStr += `[0:a][${overlayIndex}:a]amix=inputs=2:duration=longest:dropout_transition=2[aud];`;
+      const audioTrack = project.tracks.find(t => t.type === 'audio');
+      const duckingAudio = audioTrack?.clips.find(c => c.audioDucking);
+      const dspAudio = audioTrack?.clips.find(c => c.audioDspPreset && c.audioDspPreset !== 'none');
+
+      let audioMapArg = ['-map', '0:a?'];
+      if (dspAudio) {
+        const dspFilter = getAudioFilterString(dspAudio.audioDspPreset);
+        filterStr += `[1:a]${dspFilter}[dsp_a];`;
+        audioMapArg = ['-map', '[dsp_a]'];
+      } else if (duckingAudio) {
+        filterStr += `[0:a][1:a]amix=inputs=2:duration=longest:dropout_transition=2[aud];`;
+        audioMapArg = ['-map', '[aud]'];
+      }
 
       args.push('-filter_complex', filterStr);
       args.push('-map', `[out${overlayIndex - 1 || 'bg'}]`);
-      args.push(duckingAudio ? '-map' : '-map', duckingAudio ? '[aud]' : '0:a?');
+      args.push(...audioMapArg);
       args.push('-preset', 'ultrafast', 'output_sovereign.mp4');
 
       await ffmpeg.exec(args);
@@ -266,29 +357,40 @@ export default function Editor() {
 
       const a = document.createElement('a'); a.href = videoUrl; a.download = 'Sovereign_Render.mp4';
       document.body.appendChild(a); a.click(); a.remove();
-    } catch (error) { alert("Rendering failed. The device may have run out of RAM."); }
+    } catch (error) { alert("Rendering failed. Verify device memory."); }
     setIsRendering(false);
   };
 
+  // AUDIO & VIDEO SCISSORS / SPLITTER
   const handleSplitClip = () => {
     if (!selectedData) return;
     const { clip, trackId } = selectedData; const localTime = currentTime - clip.timelineStartTime;
     if (localTime > 0.2 && localTime < clip.duration - 0.2) {
-      setProject(prev => {
-        const newTracks = prev.tracks.map(t => {
-          if (t.id !== trackId) return t;
-          const cIndex = t.clips.findIndex(c => c.id === clip.id); const oldClip = t.clips[cIndex];
-          const clipA = { ...oldClip, duration: localTime }; const clipB = { ...oldClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime, duration: oldClip.duration - localTime };
-          const newClips = [...t.clips]; newClips.splice(cIndex, 1, clipA, clipB);
-          return { ...t, clips: newClips };
-        });
-        return { ...prev, tracks: newTracks, selectedClipId: null };
+      const newTracks = project.tracks.map(t => {
+        if (t.id !== trackId) return t;
+        const cIndex = t.clips.findIndex(c => c.id === clip.id); const oldClip = t.clips[cIndex];
+        const clipA = { ...oldClip, duration: localTime };
+        const clipB = { ...oldClip, id: 'c-' + Math.random().toString(36).substr(2, 9), timelineStartTime: currentTime, duration: oldClip.duration - localTime };
+        const newClips = [...t.clips]; newClips.splice(cIndex, 1, clipA, clipB);
+        return { ...t, clips: newClips };
       });
+      commitState({ ...project, tracks: newTracks, selectedClipId: null });
     }
   };
 
-  const toggleTrackMute = (trackId) => setProject(prev => ({ ...prev, tracks: prev.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) }));
+  const toggleTrackMute = (trackId) => {
+    commitState({ ...project, tracks: project.tracks.map(t => t.id === trackId ? { ...t, muted: !t.muted } : t) });
+  };
   
+  const updateSelectedClip = (key, value) => {
+    if (!selectedData) return;
+    const newTracks = project.tracks.map(t => {
+      if (t.id !== selectedData.trackId) return t;
+      return { ...t, clips: t.clips.map(c => c.id === selectedData.clip.id ? { ...c, [key]: value } : c) };
+    });
+    commitState({ ...project, tracks: newTracks });
+  };
+
   const saveTransform = (clipId, trackId, updates) => {
     setProject(prev => {
       const newTracks = prev.tracks.map(t => {
@@ -352,7 +454,18 @@ export default function Editor() {
   };
 
   const handleViewportTouchEnd = () => { pinchRef.current.active = false; panRef.current.active = false; isDraggingOverlay.current = false; activeDragClip.current = null; if (appSettings.autoPause && isPlaying) setIsPlaying(false); };
-  const startInteraction = (e, type, payload) => { e.stopPropagation(); interaction.current = { type, startX: e.touches[0].clientX, ...payload }; if (type === 'trim' || type === 'move') { setProject(prev => ({ ...prev, selectedClipId: payload.clipId })); setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 }); } };
+  
+  const startInteraction = (e, type, payload) => {
+    e.stopPropagation();
+    historyStack.current.push(JSON.parse(JSON.stringify(project))); // Commit undo snapshot before movement/trim
+    if (historyStack.current.length > 25) historyStack.current.shift();
+    futureStack.current = [];
+    interaction.current = { type, startX: e.touches[0].clientX, ...payload };
+    if (type === 'trim' || type === 'move') {
+      setProject(prev => ({ ...prev, selectedClipId: payload.clipId }));
+      setLiveTransform({ posX: payload.clipData.posX || 50, posY: payload.clipData.posY || 50, panX: payload.clipData.panX || 0, panY: payload.clipData.panY || 0, zoom: payload.clipData.zoom || 1, originX: payload.clipData.originX || 50, originY: payload.clipData.originY || 50, opacity: payload.clipData.opacity ?? 1 });
+    }
+  };
   
   const handleTimelineTouchMove = (e) => {
     const { type, edge, startX, initialStart, initialDuration, trackId, clipId } = interaction.current;
@@ -396,7 +509,6 @@ export default function Editor() {
             {embedPayload && <input type="file" ref={steganographyFileRef} style={{ fontSize: '12px', color: '#FFF' }} />}
             <textarea readOnly value={ffmpegScript} style={{ width: '100%', height: '120px', backgroundColor: '#000', color: '#00BCD4', border: '1px solid #333', borderRadius: '8px', padding: '10px', fontFamily: 'monospace', fontSize: '10px' }} />
             
-            {/* NEW RENDER PROGRESS UI */}
             {isRendering ? (
                <div style={{ textAlign: 'center', padding: '15px', color: '#FF9800', fontWeight: 'bold', fontSize: '14px', animation: 'blink 1s infinite' }}>
                  Rendering Video... {renderProgress}%
@@ -407,6 +519,43 @@ export default function Editor() {
                  <button onClick={renderVideo} style={{ backgroundColor: '#FF9800', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>Render to Gallery</button>
                </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* NEW: AUDIO DSP FREQUENCY & VOCAL MODAL */}
+      {showAudioDSPModal && selectedData && selectedData.track.type === 'audio' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ backgroundColor: '#141414', border: '1px solid #333', borderRadius: '12px', padding: '20px', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', color: '#00BCD4' }}>Audio DSP Matrix</h2>
+            <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>Select a frequency sculpt or channel extraction filter for this audio chunk:</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { id: 'none', label: 'Flat (Normal Audio)' },
+                { id: 'bass_cut', label: 'Drown Bass (Remove Muffled Lows)' },
+                { id: 'bass_boost', label: 'Bass Boost (Heavier Low End)' },
+                { id: 'instrumental', label: 'Instrumental Only (Kill Vocals)' },
+                { id: 'vocals_only', label: 'Vocals Only (Isolate Voice)' }
+              ].map(preset => (
+                <button
+                  key={preset.id}
+                  onClick={() => {
+                    updateSelectedClip('audioDspPreset', preset.id);
+                    setShowAudioDSPModal(false);
+                  }}
+                  style={{
+                    backgroundColor: selectedData.clip.audioDspPreset === preset.id ? '#00BCD4' : '#222',
+                    color: selectedData.clip.audioDspPreset === preset.id ? '#000' : '#FFF',
+                    border: 'none', borderRadius: '8px', padding: '12px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={() => setShowAudioDSPModal(false)} style={{ alignSelf: 'flex-end', backgroundColor: 'transparent', color: '#FFF', border: 'none', padding: '10px', cursor: 'pointer' }}>Close</button>
           </div>
         </div>
       )}
@@ -447,7 +596,7 @@ export default function Editor() {
               <button onClick={() => setShowStickerModal(false)} style={{ background: 'none', color: '#FFF', border: 'none', fontSize: '14px', fontWeight: 'bold' }}>Close</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', overflowY: 'auto', flex: 1 }}>
-              {stickerVault.length === 0 ? <p style={{ color: '#888', fontSize: '12px' }}>Your vault is empty. Cut out an object and tap "Save Sticker" to add it here.</p> : 
+              {stickerVault.length === 0 ? <p style={{ color: '#888', fontSize: '12px' }}>Your vault is empty.</p> : 
                 stickerVault.map((s, i) => (
                   <div key={i} onClick={() => handleDropSticker(s)} style={{ width: '80px', height: '80px', backgroundColor: '#222', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'pointer', border: '1px solid #444' }}>
                      {s.type === 'text' ? <span style={{ fontSize: '30px' }}>{s.text}</span> : <span style={{ fontSize: '10px', color: '#AAA', textAlign: 'center', wordBreak: 'break-all' }}>{s.name}</span>}
@@ -520,17 +669,20 @@ export default function Editor() {
         {activeAudioClips.map(clip => <audio key={clip.id} className="compositor-media" autoPlay={isPlaying} src={clip.url} muted={clip.muted || project.tracks.find(t=>t.type==='audio').muted} />)}
       </div>
 
-      <div style={{ height: '45px', flexShrink: 0, backgroundColor: '#141414', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', borderBottom: '1px solid #222' }}>
+      {/* TRANSPORT BAR: WITH UNDO/REDO BUTTONS */}
+      <div style={{ height: '45px', flexShrink: 0, backgroundColor: '#141414', display: 'flex', alignItems: 'center', padding: '0 15px', justifyContent: 'space-between', borderBottom: '1px solid #222' }}>
          <span style={{ fontSize: '13px', color: '#AAA', fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>{currentTime.toFixed(1)}s</span>
-         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-           <button onClick={handleRewind} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Rewind /></button>
-           <button onClick={togglePlayback} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{isPlaying ? <Icons.Pause /> : <Icons.Play />}</button>
+         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+           <button onClick={undo} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Undo /></button>
+           <button onClick={redo} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Redo /></button>
+           <button onClick={handleRewind} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Rewind /></button>
+           <button onClick={togglePlayback} style={{ background: 'none', color: '#FFF', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>{isPlaying ? <Icons.Pause /> : <Icons.Play />}</button>
          </div>
-         <div style={{ display: 'flex', gap: '8px' }}>
-           <button onClick={() => setShowSettingsModal(true)} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Settings /></button>
-           <button onClick={() => loadProjectRef.current.click()} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Load /></button>
-           <button onClick={handleSaveProject} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Save /></button>
-           <button onClick={compileFFmpegScript} style={{ backgroundColor: '#FFF', color: '#000', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Icons.Export /> Export</button>
+         <div style={{ display: 'flex', gap: '6px' }}>
+           <button onClick={() => setShowSettingsModal(true)} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Settings /></button>
+           <button onClick={() => loadProjectRef.current.click()} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Load /></button>
+           <button onClick={handleSaveProject} style={{ backgroundColor: '#333', color: '#FFF', border: 'none', borderRadius: '20px', padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><Icons.Save /></button>
+           <button onClick={compileFFmpegScript} style={{ backgroundColor: '#FFF', color: '#000', border: 'none', borderRadius: '20px', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}><Icons.Export /> Export</button>
          </div>
       </div>
 
@@ -548,7 +700,6 @@ export default function Editor() {
                 <span style={{ fontSize: '10px', color: '#AAA', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', textAlign: 'center', marginBottom: '4px' }}>{track.name}</span>
                 <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                   <button onClick={() => toggleTrackMute(track.id)} style={{ background: 'transparent', color: track.muted ? '#E91E63' : '#666', border: 'none', padding: '4px' }}>{track.muted ? <Icons.Mute /> : <Icons.Unmute />}</button>
-                  {/* NEW: THE TRACK SWEEPER. Shows red X to delete track if empty */}
                   {track.clips.length === 0 && track.type !== 'main_video' && track.type !== 'audio' && (
                     <button onClick={() => deleteTrack(track.id)} style={{ background: 'transparent', color: '#f44336', border: 'none', padding: '4px', cursor: 'pointer' }}><Icons.Delete /></button>
                   )}
@@ -558,7 +709,9 @@ export default function Editor() {
                 {track.clips.map(clip => (
                   <div key={clip.id} onClick={(e) => { e.stopPropagation(); setProject(p => ({ ...p, selectedClipId: clip.id })); setLiveTransform({ posX: clip.posX || 50, posY: clip.posY || 50, panX: clip.panX || 0, panY: clip.panY || 0, zoom: clip.zoom || 1, originX: clip.originX || 50, originY: clip.originY || 50, opacity: clip.opacity ?? 1 }); }} onTouchStart={(e) => startInteraction(e, 'move', { clipId: clip.id, trackId: track.id, initialStart: clip.timelineStartTime, clipData: clip })}
                     style={{ position: 'absolute', left: `${clip.timelineStartTime * project.zoomLevel}px`, width: `${clip.duration * project.zoomLevel}px`, height: '100%', borderRadius: '6px', background: `linear-gradient(180deg, ${clip.color}DD 0%, ${clip.color} 100%)`, border: selectedData?.clip?.id === clip.id ? '2px solid #FFF' : '1px solid rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color: '#FFF', opacity: track.muted ? 0.4 : 1, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}>
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', padding: '0 10px', pointerEvents: 'none' }}>{clip.name}</span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', padding: '0 10px', pointerEvents: 'none' }}>
+                      {clip.name} {clip.audioDspPreset && clip.audioDspPreset !== 'none' ? `[${clip.audioDspPreset}]` : ''}
+                    </span>
                     {selectedData?.clip?.id === clip.id && (
                       <>
                         <div onTouchStart={(e) => startInteraction(e, 'trim', { clipId: clip.id, trackId: track.id, edge: 'left', initialStart: clip.timelineStartTime, initialDuration: clip.duration, clipData: clip })} style={{ position: 'absolute', left: '-2px', top: 0, bottom: 0, width: '24px', backgroundColor: '#FFF', borderRadius: '6px 0 0 6px', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}><div style={{ width: '4px', height: '20px', borderLeft: '1px solid #CCC', borderRight: '1px solid #CCC' }} /></div>
@@ -593,10 +746,12 @@ export default function Editor() {
           <>
             <button onClick={() => setProject(prev => ({...prev, selectedClipId: null}))} style={{...toolIconBtn, color: '#4CAF50'}}><Icons.Done /> <span style={{...toolLabel, color: '#4CAF50'}}>Done</span></button>
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
+            {/* Split works on Audio or Video clips alike */}
             <button onClick={handleSplitClip} style={toolIconBtn}><Icons.Split /> <span style={toolLabel}>Split</span></button>
             
             {selectedData.track.type === 'overlay' && selectedData.clip.type !== 'text' && (
               <>
+                <button onClick={() => updateSelectedClip('chromaKey', !selectedData.clip.chromaKey)} style={{ ...toolIconBtn, color: selectedData.clip.chromaKey ? '#4CAF50' : '#ECECEC' }}><Icons.GreenScreen /> <span style={{...toolLabel, color: selectedData.clip.chromaKey ? '#4CAF50' : '#AAA'}}>Keying</span></button>
                 <button onClick={executeWasmCutout} disabled={isProcessingAI} style={{ ...toolIconBtn, color: selectedData.clip.magicCutout ? '#FF9800' : '#ECECEC' }}>
                   {isProcessingAI ? <div style={{width: 16, height: 16, border: '2px solid #FF9800', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite'}} /> : <Icons.Cutout />}
                   <span style={{...toolLabel, color: selectedData.clip.magicCutout ? '#FF9800' : '#AAA'}}>{isProcessingAI ? 'Masking...' : 'Cutout'}</span>
@@ -604,8 +759,13 @@ export default function Editor() {
                 <button onClick={handleSaveSticker} style={{ ...toolIconBtn, color: '#FFC107' }}><Icons.Sticker /> <span style={{...toolLabel, color: '#FFC107'}}>Save</span></button>
               </>
             )}
+
+            {/* AUDIO TOOLS: Ducking + New Audio DSP Preset Modal */}
             {selectedData.track.type === 'audio' && (
-              <button onClick={() => updateSelectedClip('audioDucking', !selectedData.clip.audioDucking)} style={{ ...toolIconBtn, color: selectedData.clip.audioDucking ? '#4CAF50' : '#ECECEC' }}><Icons.Mic /> <span style={{...toolLabel, color: selectedData.clip.audioDucking ? '#4CAF50' : '#AAA'}}>Ducking</span></button>
+              <>
+                <button onClick={() => updateSelectedClip('audioDucking', !selectedData.clip.audioDucking)} style={{ ...toolIconBtn, color: selectedData.clip.audioDucking ? '#4CAF50' : '#ECECEC' }}><Icons.Mic /> <span style={{...toolLabel, color: selectedData.clip.audioDucking ? '#4CAF50' : '#AAA'}}>Ducking</span></button>
+                <button onClick={() => setShowAudioDSPModal(true)} style={{ ...toolIconBtn, color: selectedData.clip.audioDspPreset && selectedData.clip.audioDspPreset !== 'none' ? '#00BCD4' : '#ECECEC' }}><Icons.AudioDSP /> <span style={{...toolLabel, color: selectedData.clip.audioDspPreset && selectedData.clip.audioDspPreset !== 'none' ? '#00BCD4' : '#AAA'}}>EQ/Vocals</span></button>
+              </>
             )}
 
             <div style={{ height: '30px', borderLeft: '1px solid #333' }} />
@@ -623,7 +783,10 @@ export default function Editor() {
                 </div>
               </>
             )}
-            <button onClick={() => setProject(prev => { const newTracks = prev.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== selectedData.clip.id) })); return { ...prev, tracks: newTracks, selectedClipId: null }; })} style={{ ...toolIconBtn, color: '#f44336', marginLeft: 'auto' }}><Icons.Delete /> <span style={{...toolLabel, color: '#f44336'}}>Delete</span></button>
+            <button onClick={() => {
+              const newTracks = project.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== selectedData.clip.id) }));
+              commitState({ ...project, tracks: newTracks, selectedClipId: null });
+            }} style={{ ...toolIconBtn, color: '#f44336', marginLeft: 'auto' }}><Icons.Delete /> <span style={{...toolLabel, color: '#f44336'}}>Delete</span></button>
           </>
         )}
       </div>
